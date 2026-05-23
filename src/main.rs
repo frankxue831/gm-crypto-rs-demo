@@ -1,9 +1,9 @@
-use crypto_bigint::U256;
+use getrandom::SysRng;
 use gmcrypto_core::sm2::{
     sign_with_id, verify_with_id, Sm2PrivateKey, Sm2PublicKey, DEFAULT_SIGNER_ID,
 };
 use gmcrypto_core::sm3;
-use rand_core::OsRng;
+use rand_core::UnwrapErr;
 use std::env;
 use std::process::ExitCode;
 
@@ -31,7 +31,8 @@ fn run(args: Vec<String>) -> Result<ExitCode, String> {
         }
         [command, message] if command == "sign" => {
             let key = sample_private_key();
-            let signature = sign_with_id(&key, DEFAULT_SIGNER_ID, message.as_bytes(), &mut OsRng)
+            let mut rng = UnwrapErr(SysRng);
+            let signature = sign_with_id(&key, DEFAULT_SIGNER_ID, message.as_bytes(), &mut rng)
                 .map_err(|_| "signing failed".to_owned())?;
             println!("{}", encode_hex(&signature));
             Ok(ExitCode::SUCCESS)
@@ -54,8 +55,11 @@ fn run(args: Vec<String>) -> Result<ExitCode, String> {
 }
 
 fn sample_private_key() -> Sm2PrivateKey {
-    let d = U256::from_be_hex(SAMPLE_PRIVATE_KEY_HEX);
-    Sm2PrivateKey::new(d).expect("sample private key is valid")
+    let bytes: [u8; 32] = decode_hex(SAMPLE_PRIVATE_KEY_HEX)
+        .expect("sample private key hex is valid")
+        .try_into()
+        .expect("sample private key is 32 bytes");
+    Sm2PrivateKey::from_bytes_be(&bytes).expect("sample private key is valid")
 }
 
 fn encode_hex(bytes: &[u8]) -> String {
