@@ -1,0 +1,8 @@
+title = "gm-crypto-rs-demo gitleaks config"
+
+[allowlist]
+description = "Public fixed SM4-CBC demo key documented for SDK examples."
+regexTarget = "match"
+regexes = [
+  '''0123456789abcdeffedcba9876543210''',
+]
