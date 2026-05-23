@@ -35,19 +35,25 @@ Initial commands:
 - `hash <message>`: existing SM3 single-shot digest
 - `sign <message> [--id <signer-id>]`: SM2 sign with default or custom signer ID
 - `verify <message> <der-signature-hex> [--id <signer-id>]`: SM2 verify with matching signer ID
-- `key-info`: print the sample public key in an exported encoding available from `gmcrypto-core`
-- `encrypt <message>`: SM2 public-key encryption if exposed by `gmcrypto-core = 0.12.0`
-- `decrypt <ciphertext-hex>`: SM2 private-key decryption if exposed by `gmcrypto-core = 0.12.0`
-- `sm4-encrypt <message>`: SM4-CBC encryption with fixed demo key and IV if exposed by `gmcrypto-core = 0.12.0`
-- `sm4-decrypt <ciphertext-hex>`: SM4-CBC decryption with the same fixed demo key and IV if exposed by `gmcrypto-core = 0.12.0`
+- `key-info`: print the sample public key as SEC1 uncompressed hex, SPKI DER hex, and SPKI PEM
+- `encrypt <message>`: SM2 public-key encryption, printing DER ciphertext hex
+- `decrypt <ciphertext-hex>`: SM2 private-key decryption from DER ciphertext hex
+- `sm4-encrypt <message>`: SM4-CBC encryption with fixed demo key and IV
+- `sm4-decrypt <ciphertext-hex>`: SM4-CBC decryption with the same fixed demo key and IV
+- `hmac <key-hex> <message>`: HMAC-SM3 single-shot MAC
+- `pbkdf2 <password> <salt-hex> <iterations> <out-len>`: PBKDF2-HMAC-SM3 derived key bytes
 - `tour`: run a readable end-to-end walkthrough
 
-If HMAC-SM3 or PBKDF2-HMAC-SM3 are exposed directly by the Rust crate version, add:
+The public API of `gmcrypto-core = 0.12.0` has been checked locally. These commands can use:
 
-- `hmac <key-hex> <message>`
-- `pbkdf2 <password> <salt-hex> <iterations> <out-len>`
+- `gmcrypto_core::sm2::encrypt`
+- `gmcrypto_core::sm2::decrypt`
+- `gmcrypto_core::sm4::mode_cbc::{encrypt, decrypt}`
+- `gmcrypto_core::hmac::hmac_sm3`
+- `gmcrypto_core::kdf::pbkdf2_hmac_sm3`
+- `gmcrypto_core::{spki, pem}`
 
-If any candidate API is not present in `gmcrypto-core = 0.12.0`, omit that command rather than adding a different dependency or switching to a local workspace crate.
+Optional `--id` parsing should stay deliberately small: only accept the trailing form `--id <signer-id>` after the required command arguments. Missing values, duplicated flags, or flags in other positions should produce the existing usage error path.
 
 ## Cookbook Examples
 
@@ -57,8 +63,8 @@ Add focused examples under `examples/` once matching public Rust APIs are confir
 - `examples/sm2_sign_verify.rs`
 - `examples/sm2_encrypt_decrypt.rs`
 - `examples/sm4_cbc.rs`
-- `examples/hmac_sm3.rs` if supported
-- `examples/pbkdf2_hmac_sm3.rs` if supported
+- `examples/hmac_sm3.rs`
+- `examples/pbkdf2_hmac_sm3.rs`
 
 Each example should be short, self-contained, and built around static demo material. Avoid framework code, configuration files, or abstractions that obscure the SDK calls.
 
@@ -71,15 +77,20 @@ The `tour` command should print a concise sequence of operations:
 3. Sign and verify a message with the default signer ID.
 4. Demonstrate a failed verification after tampering.
 5. Export public key information.
-6. Encrypt/decrypt with SM2 if available.
-7. Encrypt/decrypt with SM4-CBC if available.
-8. Run HMAC/PBKDF2 steps if available.
+6. Encrypt/decrypt with SM2.
+7. Encrypt/decrypt with SM4-CBC.
+8. Run HMAC-SM3 and PBKDF2-HMAC-SM3 steps.
 
-The output should be readable and stable enough for tests where randomness is not involved. For randomized operations such as SM2 signatures or encryption, tests should assert round-trip behavior rather than exact bytes.
+The output should be readable and stable enough for tests where randomness is not involved. For randomized operations such as SM2 signatures or encryption, the command may print the random signature or ciphertext with clear labels, but tests must assert section labels and success/failure verdicts rather than exact randomized bytes.
 
 ## Safety and Messaging
 
 All sample keys, IVs, passwords, and signer IDs are public demo material. The README and CLI output should clearly say they are not production secrets.
+
+Use these fixed demo values for SM4-CBC:
+
+- Key hex: `0123456789abcdeffedcba9876543210`
+- IV hex: `000102030405060708090a0b0c0d0e0f`
 
 Avoid presenting the combined workflow as a production protocol. It is an SDK tour, not cryptographic protocol guidance.
 
@@ -99,9 +110,12 @@ Update integration tests in `tests/cli.rs` to cover:
 - Existing hash output remains the known SM3 digest for `abc`.
 - Signing verifies successfully and rejects tampered messages.
 - Custom signer ID succeeds only when signing and verifying use the same ID.
-- `key-info` prints stable public key material.
-- Encryption commands round-trip when available.
-- SM4 commands round-trip when available.
+- Custom signer ID verification fails when verifying with a different ID.
+- `key-info` prints stable labels for SEC1 uncompressed hex, SPKI DER hex, and SPKI PEM.
+- SM2 encryption commands round-trip without asserting exact ciphertext.
+- SM4 commands round-trip with the fixed demo key and IV.
+- HMAC-SM3 prints a stable tag for a fixed key and message.
+- PBKDF2-HMAC-SM3 prints stable derived bytes for fixed inputs.
 - `tour` exits successfully and includes section labels for the demonstrated features.
 
 Add example build coverage through `cargo test --examples` if the local toolchain supports it.
@@ -116,6 +130,6 @@ Update `README.md` with:
 - Example file list.
 - A warning that all demo material is public and unsuitable for real data.
 
-## Open Implementation Check
+## Implementation Check
 
-Before implementation, inspect the exact public API of `gmcrypto-core = 0.12.0` available to this project. The design intentionally lists candidate features, but the final implementation should include only APIs exposed by that published Rust crate.
+The exact public API of `gmcrypto-core = 0.12.0` was inspected before implementation planning. All commands in this design map to APIs exposed by that published Rust crate, so the implementation should not add alternate crypto dependencies or switch to a path dependency.
