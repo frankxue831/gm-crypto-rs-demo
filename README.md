@@ -100,6 +100,13 @@ test (CI runs all of them):
 The `sm4_aead` and `sm4_xts` examples are gated behind the `sm4-aead` / `sm4-xts`
 features respectively.
 
+## Guide
+
+For a deeper, do/don't walkthrough of how to use each primitive correctly — RNG
+handling, nonce/IV uniqueness, authenticated vs. unauthenticated modes, PBKDF2
+iteration counts, key storage, and a "pick the right tool" cheat sheet — see
+[`docs/using-gmcrypto-core.md`](docs/using-gmcrypto-core.md).
+
 ## Test
 
 ```bash
