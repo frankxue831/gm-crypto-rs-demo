@@ -27,7 +27,9 @@ Do not run the deprecated `superpowers-codex bootstrap` command.
 - Primary dependency: published `gmcrypto-core = "=0.12.0"` from crates.io.
 - RNG dependencies: `getrandom` with `sys_rng`, plus `rand_core`.
 - Test surface: Rust unit/integration tests and CLI smoke tests under `tests/`.
-- CI baseline: GitHub Actions runs `cargo test` on Rust toolchain `1.85`.
+- CI baseline: GitHub Actions (Rust toolchain `1.85`) runs `cargo clippy -D warnings`,
+  `cargo test`, and every example — the default set plus the `sm4-aead` / `sm4-xts`
+  gated ones.
 
 ## Architectural Principles
 
