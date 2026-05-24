@@ -23,5 +23,13 @@ fn main() {
     assert_eq!(&recovered2[..], &plaintext[..], "decrypt must recover plaintext");
     println!("  both ciphertexts decrypt back to the plaintext");
 
+    // SM2 decryption verifies the embedded C3 hash, so corrupted input is
+    // rejected rather than silently mangled.
+    assert!(
+        decrypt(&key, b"not a valid ciphertext").is_err(),
+        "corrupt ciphertext must be rejected",
+    );
+    println!("  corrupted ciphertext is rejected");
+
     println!("\nOK");
 }

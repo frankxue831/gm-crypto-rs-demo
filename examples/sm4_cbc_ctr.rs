@@ -5,7 +5,7 @@ use gm_crypto_rs_demo::encode_hex;
 use gmcrypto_core::sm4::{mode_cbc, mode_ctr, Sm4Cipher};
 
 fn main() {
-    println!("== SM4 (GB/T 32907): 128-bit block cipher ==\n");
+    println!("== SM4 (GB/T 32907-2016): 128-bit block cipher ==\n");
 
     let key = [0x01u8; 16];
     let iv = [0x02u8; 16];
@@ -17,8 +17,12 @@ fn main() {
     println!("CBC ciphertext = {}", encode_hex(&ct));
     println!("CBC round-trips");
 
-    let ct = mode_ctr::encrypt(&key, &iv, plaintext);
-    let pt = mode_ctr::decrypt(&key, &iv, &ct);
+    // CTR uses a 16-byte initial counter block (distinct role from the CBC IV).
+    // The (key, counter) pair MUST be unique per message: reusing it leaks the
+    // XOR of the two plaintexts.
+    let counter = [0x03u8; 16];
+    let ct = mode_ctr::encrypt(&key, &counter, plaintext);
+    let pt = mode_ctr::decrypt(&key, &counter, &ct);
     assert_eq!(&pt[..], &plaintext[..], "CTR round-trip");
     println!("CTR round-trips");
 

@@ -37,6 +37,10 @@ fn main() {
     );
     println!("SPKI public key round-trips");
 
+    // In production the salt and IV must be random and unique per encryption
+    // (reusing them under one password risks key recovery), and the iteration
+    // count should be far higher (OWASP suggests >= 600_000). Fixed here for a
+    // reproducible demo.
     let password = b"demo-password";
     let salt = b"demo-salt-1234567";
     let iv = [0x11u8; 16];

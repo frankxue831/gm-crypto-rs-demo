@@ -13,6 +13,8 @@ fn main() {
     let public = Sm2PublicKey::from_point(key.public_key());
     let message = b"hello";
 
+    // Z is the identity hash SM2 folds into the message hash. Shown here for
+    // inspection only — sign_with_id / verify_with_id compute it internally.
     let z = compute_z(&public, DEFAULT_SIGNER_ID);
     println!("Z (from DEFAULT_SIGNER_ID) = {}", encode_hex(&z));
 

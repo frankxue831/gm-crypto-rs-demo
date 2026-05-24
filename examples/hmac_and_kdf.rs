@@ -32,6 +32,8 @@ fn main() {
     assert!(!bad.verify(&wrong), "tampered tag must be rejected");
     println!("  verify() accepts the right tag, rejects a wrong one");
 
+    // NOTE: 10_000 iterations keeps this example fast. For real password
+    // hashing use a far higher count (OWASP suggests >= 600_000).
     let password = b"correct horse battery staple";
     let salt = b"demo-salt";
     let mut derived = [0u8; 32];
