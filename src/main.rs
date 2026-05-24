@@ -1,20 +1,16 @@
-use getrandom::SysRng;
+use gm_crypto_rs_demo::{decode_hex, encode_hex, os_rng, sample_private_key, sample_public_key};
 use gmcrypto_core::hmac::hmac_sm3;
 use gmcrypto_core::kdf::pbkdf2_hmac_sm3;
 use gmcrypto_core::pem;
 use gmcrypto_core::sm2::{
-    decrypt as sm2_decrypt, encrypt as sm2_encrypt, sign_with_id, verify_with_id, Sm2PrivateKey,
-    Sm2PublicKey, DEFAULT_SIGNER_ID,
+    decrypt as sm2_decrypt, encrypt as sm2_encrypt, sign_with_id, verify_with_id, DEFAULT_SIGNER_ID,
 };
 use gmcrypto_core::sm3;
 use gmcrypto_core::sm4::mode_cbc;
 use gmcrypto_core::spki;
-use rand_core::UnwrapErr;
 use std::env;
 use std::process::ExitCode;
 
-const SAMPLE_PRIVATE_KEY_HEX: &str =
-    "3945208F7B2144B13F36E38AC6D39F95889393692860B51A42FB81EF4DF7C5B8";
 const DEMO_SM4_KEY: [u8; 16] = [
     0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
 ];
@@ -74,7 +70,7 @@ fn print_hash(message: &str) -> Result<ExitCode, String> {
 
 fn print_signature(message: &str, signer_id: &[u8]) -> Result<ExitCode, String> {
     let key = sample_private_key();
-    let mut rng = UnwrapErr(SysRng);
+    let mut rng = os_rng();
     let signature = sign_with_id(&key, signer_id, message.as_bytes(), &mut rng)
         .map_err(|_| "signing failed".to_owned())?;
     println!("{}", encode_hex(&signature));
@@ -113,7 +109,7 @@ fn print_key_info() -> Result<ExitCode, String> {
 
 fn print_sm2_ciphertext(message: &str) -> Result<ExitCode, String> {
     let public = sample_public_key();
-    let mut rng = UnwrapErr(SysRng);
+    let mut rng = os_rng();
     let ciphertext = sm2_encrypt(&public, message.as_bytes(), &mut rng)
         .map_err(|_| "SM2 encryption failed".to_owned())?;
     println!("{}", encode_hex(&ciphertext));
@@ -180,7 +176,7 @@ fn print_tour() -> Result<ExitCode, String> {
     println!("== SM2 sign/verify ==");
     let key = sample_private_key();
     let public = sample_public_key();
-    let mut rng = UnwrapErr(SysRng);
+    let mut rng = os_rng();
     let signature = sign_with_id(&key, DEFAULT_SIGNER_ID, message.as_bytes(), &mut rng)
         .map_err(|_| "signing failed".to_owned())?;
     println!("signature-der-hex: {}", encode_hex(&signature));
@@ -238,51 +234,6 @@ fn print_tour() -> Result<ExitCode, String> {
     println!("derived-key: {}", encode_hex(&derived));
 
     Ok(ExitCode::SUCCESS)
-}
-
-fn sample_private_key() -> Sm2PrivateKey {
-    let bytes: [u8; 32] = decode_hex(SAMPLE_PRIVATE_KEY_HEX)
-        .expect("sample private key hex is valid")
-        .try_into()
-        .expect("sample private key is 32 bytes");
-    Sm2PrivateKey::from_bytes_be(&bytes).expect("sample private key is valid")
-}
-
-fn sample_public_key() -> Sm2PublicKey {
-    Sm2PublicKey::from_point(sample_private_key().public_key())
-}
-
-fn encode_hex(bytes: &[u8]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut out = String::with_capacity(bytes.len() * 2);
-    for &byte in bytes {
-        out.push(HEX[(byte >> 4) as usize] as char);
-        out.push(HEX[(byte & 0x0f) as usize] as char);
-    }
-    out
-}
-
-fn decode_hex(input: &str) -> Result<Vec<u8>, String> {
-    if input.len() % 2 != 0 {
-        return Err("hex input must have an even number of characters".to_owned());
-    }
-
-    let mut out = Vec::with_capacity(input.len() / 2);
-    for pair in input.as_bytes().chunks_exact(2) {
-        let high = hex_value(pair[0])?;
-        let low = hex_value(pair[1])?;
-        out.push((high << 4) | low);
-    }
-    Ok(out)
-}
-
-fn hex_value(byte: u8) -> Result<u8, String> {
-    match byte {
-        b'0'..=b'9' => Ok(byte - b'0'),
-        b'a'..=b'f' => Ok(byte - b'a' + 10),
-        b'A'..=b'F' => Ok(byte - b'A' + 10),
-        _ => Err(format!("invalid hex character: {}", byte as char)),
-    }
 }
 
 fn print_usage() {

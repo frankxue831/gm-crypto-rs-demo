@@ -1,48 +1,35 @@
-use getrandom::SysRng;
-use gmcrypto_core::sm2::{decrypt, encrypt, Sm2PrivateKey, Sm2PublicKey};
-use rand_core::UnwrapErr;
+//! SM2 public-key encryption — encrypt / decrypt.
+//! Run: cargo run --example sm2_encrypt_decrypt
 
-const SAMPLE_PRIVATE_KEY_HEX: &str =
-    "3945208F7B2144B13F36E38AC6D39F95889393692860B51A42FB81EF4DF7C5B8";
+use gm_crypto_rs_demo::{encode_hex, os_rng, sample_private_key};
+use gmcrypto_core::sm2::{decrypt, encrypt, Sm2PublicKey};
 
 fn main() {
+    println!("== SM2 public-key encryption (GB/T 32918.4) ==\n");
+
     let key = sample_private_key();
     let public = Sm2PublicKey::from_point(key.public_key());
-    let mut rng = UnwrapErr(SysRng);
+    let plaintext = b"secret message";
 
-    let ciphertext = encrypt(&public, b"hello sdk", &mut rng).expect("encrypt");
-    let plaintext = decrypt(&key, &ciphertext).expect("decrypt");
+    let mut rng = os_rng();
+    let ct1 = encrypt(&public, plaintext, &mut rng).expect("encrypt");
+    let ct2 = encrypt(&public, plaintext, &mut rng).expect("encrypt");
+    println!("ciphertext (DER) = {}", encode_hex(&ct1));
+    assert_ne!(ct1, ct2, "fresh nonce -> different ciphertext each time");
 
-    println!("{}", String::from_utf8_lossy(&plaintext));
-}
+    let recovered = decrypt(&key, &ct1).expect("decrypt");
+    assert_eq!(&recovered[..], &plaintext[..], "decrypt must recover plaintext");
+    let recovered2 = decrypt(&key, &ct2).expect("decrypt");
+    assert_eq!(&recovered2[..], &plaintext[..], "decrypt must recover plaintext");
+    println!("  both ciphertexts decrypt back to the plaintext");
 
-fn sample_private_key() -> Sm2PrivateKey {
-    let bytes: [u8; 32] = decode_hex(SAMPLE_PRIVATE_KEY_HEX)
-        .expect("sample private key hex is valid")
-        .try_into()
-        .expect("sample private key is 32 bytes");
-    Sm2PrivateKey::from_bytes_be(&bytes).expect("sample private key is valid")
-}
+    // SM2 decryption verifies the embedded C3 hash, so corrupted input is
+    // rejected rather than silently mangled.
+    assert!(
+        decrypt(&key, b"not a valid ciphertext").is_err(),
+        "corrupt ciphertext must be rejected",
+    );
+    println!("  corrupted ciphertext is rejected");
 
-fn decode_hex(input: &str) -> Result<Vec<u8>, String> {
-    if input.len() % 2 != 0 {
-        return Err("hex input must have an even number of characters".to_owned());
-    }
-
-    let mut out = Vec::with_capacity(input.len() / 2);
-    for pair in input.as_bytes().chunks_exact(2) {
-        let high = hex_value(pair[0])?;
-        let low = hex_value(pair[1])?;
-        out.push((high << 4) | low);
-    }
-    Ok(out)
-}
-
-fn hex_value(byte: u8) -> Result<u8, String> {
-    match byte {
-        b'0'..=b'9' => Ok(byte - b'0'),
-        b'a'..=b'f' => Ok(byte - b'a' + 10),
-        b'A'..=b'F' => Ok(byte - b'A' + 10),
-        _ => Err(format!("invalid hex character: {}", byte as char)),
-    }
+    println!("\nOK");
 }

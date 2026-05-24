@@ -12,3 +12,15 @@ publish = false
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 gmcrypto-core = "=0.12.0"
 rand_core = "0.10.1"
+
+[features]
+sm4-aead = ["gmcrypto-core/sm4-aead"]
+sm4-xts = ["gmcrypto-core/sm4-xts"]
+
+[[example]]
+name = "sm4_aead"
+required-features = ["sm4-aead"]
+
+[[example]]
+name = "sm4_xts"
+required-features = ["sm4-xts"]

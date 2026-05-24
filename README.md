@@ -82,16 +82,23 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 
 ## Cookbook Examples
 
-Each example is a small standalone Rust program:
+Each example under [`examples/`](examples/) is a small standalone program that
+narrates what it does and asserts its own round-trips, so it doubles as a smoke
+test (CI runs all of them):
 
-```bash
-cargo run --example sm3_hash
-cargo run --example sm2_sign_verify
-cargo run --example sm2_encrypt_decrypt
-cargo run --example sm4_cbc
-cargo run --example hmac_sm3
-cargo run --example pbkdf2_hmac_sm3
-```
+| Example | Demonstrates | Run |
+|---|---|---|
+| `sm3_hashing` | SM3 one-shot + streaming hasher | `cargo run --example sm3_hashing` |
+| `hmac_and_kdf` | HMAC-SM3 (one-shot/streaming/verify) + PBKDF2-HMAC-SM3 | `cargo run --example hmac_and_kdf` |
+| `sm2_sign_verify` | SM2 sign/verify, signer-ID `Z`, tamper rejection | `cargo run --example sm2_sign_verify` |
+| `sm2_encrypt_decrypt` | SM2 public-key encryption | `cargo run --example sm2_encrypt_decrypt` |
+| `sm2_key_encoding` | PKCS#8 / SEC1 / SPKI / PEM + encrypted PKCS#8 | `cargo run --example sm2_key_encoding` |
+| `sm4_cbc_ctr` | SM4 CBC + CTR + raw block | `cargo run --example sm4_cbc_ctr` |
+| `sm4_aead` | SM4-GCM authenticated encryption | `cargo run --features sm4-aead --example sm4_aead` |
+| `sm4_xts` | SM4-XTS sector encryption | `cargo run --features sm4-xts --example sm4_xts` |
+
+The `sm4_aead` and `sm4_xts` examples are gated behind the `sm4-aead` / `sm4-xts`
+features respectively.
 
 ## Test
 
