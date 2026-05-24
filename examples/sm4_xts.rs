@@ -20,10 +20,19 @@ fn main() {
     let sector = b"a disk sector worth of bytes to encrypt!";
 
     let ct = mode_xts::encrypt(&key, &tweak, sector).expect("xts encrypt");
+    println!("ciphertext = {}", encode_hex(&ct));
     let pt = mode_xts::decrypt(&key, &tweak, &ct).expect("xts decrypt");
     assert_eq!(&pt[..], &sector[..], "XTS round-trip");
-    println!("ciphertext = {}", encode_hex(&ct));
     println!("XTS round-trips");
+
+    // Unlike SM4-GCM, XTS provides confidentiality but NO authentication:
+    // decrypting with the wrong tweak still "succeeds" — it just returns
+    // garbage rather than failing. Use an AEAD mode when you need integrity.
+    let mut wrong_tweak = tweak;
+    wrong_tweak[0] ^= 1;
+    let garbled = mode_xts::decrypt(&key, &wrong_tweak, &ct).expect("xts decrypt");
+    assert_ne!(&garbled[..], &sector[..], "wrong tweak yields garbage, not an error");
+    println!("wrong tweak decrypts to garbage (XTS is unauthenticated)");
 
     println!("\nOK");
 }

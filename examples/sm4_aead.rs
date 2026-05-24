@@ -20,7 +20,7 @@ fn main() {
     assert_eq!(&recovered[..], &plaintext[..], "GCM round-trip");
     println!("  decrypt with correct inputs succeeds");
 
-    let mut bad_ct = ciphertext.clone();
+    let mut bad_ct = ciphertext.clone(); // clone so we can flip a byte for the tamper test
     bad_ct[0] ^= 1;
     assert!(
         mode_gcm::decrypt(&key, &nonce, aad, &bad_ct, &tag).is_none(),
