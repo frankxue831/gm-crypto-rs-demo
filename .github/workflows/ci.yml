@@ -10,4 +10,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.85
+        with:
+          components: clippy
+      - run: cargo clippy --all-targets --features "sm4-aead sm4-xts" -- -D warnings
       - run: cargo test
+      - name: Run default-feature examples
+        run: |
+          for ex in sm3_hashing hmac_and_kdf sm2_sign_verify sm2_encrypt_decrypt sm2_key_encoding sm4_cbc_ctr; do
+            echo "=== $ex ==="
+            cargo run --quiet --example "$ex"
+          done
+      - name: Run feature-gated examples
+        run: |
+          cargo run --quiet --features sm4-aead --example sm4_aead
+          cargo run --quiet --features sm4-xts --example sm4_xts

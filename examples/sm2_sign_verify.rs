@@ -1,50 +1,36 @@
-use getrandom::SysRng;
-use gmcrypto_core::sm2::{sign_with_id, verify_with_id, Sm2PrivateKey, Sm2PublicKey};
-use rand_core::UnwrapErr;
+//! SM2 digital signatures — sign_with_id / verify_with_id.
+//! Run: cargo run --example sm2_sign_verify
 
-const SAMPLE_PRIVATE_KEY_HEX: &str =
-    "3945208F7B2144B13F36E38AC6D39F95889393692860B51A42FB81EF4DF7C5B8";
+use gm_crypto_rs_demo::{encode_hex, os_rng, sample_private_key};
+use gmcrypto_core::sm2::{
+    compute_z, sign_with_id, verify_with_id, Sm2PublicKey, DEFAULT_SIGNER_ID,
+};
 
 fn main() {
+    println!("== SM2 signatures (GB/T 32918.2) ==\n");
+
     let key = sample_private_key();
     let public = Sm2PublicKey::from_point(key.public_key());
-    let mut rng = UnwrapErr(SysRng);
-    let signer_id = b"demo-user";
-    let message = b"hello sdk";
+    let message = b"hello";
 
-    let signature = sign_with_id(&key, signer_id, message, &mut rng).expect("sign");
-    let valid = verify_with_id(&public, signer_id, message, &signature);
+    // Z is the identity hash SM2 folds into the message hash. Shown here for
+    // inspection only — sign_with_id / verify_with_id compute it internally.
+    let z = compute_z(&public, DEFAULT_SIGNER_ID);
+    println!("Z (from DEFAULT_SIGNER_ID) = {}", encode_hex(&z));
 
-    println!("valid: {valid}");
-}
+    let mut rng = os_rng();
+    let sig1 = sign_with_id(&key, DEFAULT_SIGNER_ID, message, &mut rng).expect("sign");
+    let sig2 = sign_with_id(&key, DEFAULT_SIGNER_ID, message, &mut rng).expect("sign");
+    println!("sig1 = {}", encode_hex(&sig1));
+    println!("sig2 = {}", encode_hex(&sig2));
+    assert_ne!(sig1, sig2, "SM2 signatures are randomized");
 
-fn sample_private_key() -> Sm2PrivateKey {
-    let bytes: [u8; 32] = decode_hex(SAMPLE_PRIVATE_KEY_HEX)
-        .expect("sample private key hex is valid")
-        .try_into()
-        .expect("sample private key is 32 bytes");
-    Sm2PrivateKey::from_bytes_be(&bytes).expect("sample private key is valid")
-}
+    assert!(verify_with_id(&public, DEFAULT_SIGNER_ID, message, &sig1));
+    assert!(verify_with_id(&public, DEFAULT_SIGNER_ID, message, &sig2));
+    println!("  both independent signatures verify");
 
-fn decode_hex(input: &str) -> Result<Vec<u8>, String> {
-    if input.len() % 2 != 0 {
-        return Err("hex input must have an even number of characters".to_owned());
-    }
+    assert!(!verify_with_id(&public, DEFAULT_SIGNER_ID, b"h3llo", &sig1));
+    println!("  tampered message rejected");
 
-    let mut out = Vec::with_capacity(input.len() / 2);
-    for pair in input.as_bytes().chunks_exact(2) {
-        let high = hex_value(pair[0])?;
-        let low = hex_value(pair[1])?;
-        out.push((high << 4) | low);
-    }
-    Ok(out)
-}
-
-fn hex_value(byte: u8) -> Result<u8, String> {
-    match byte {
-        b'0'..=b'9' => Ok(byte - b'0'),
-        b'a'..=b'f' => Ok(byte - b'a' + 10),
-        b'A'..=b'F' => Ok(byte - b'A' + 10),
-        _ => Err(format!("invalid hex character: {}", byte as char)),
-    }
+    println!("\nOK");
 }

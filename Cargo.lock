@@ -39,6 +39,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15b85f9c39137c3a891689859392b1bd49812121d0d61c9caf00d46ed5ce06ae"
 
 [[package]]
+name = "cpufeatures"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "crypto-bigint"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -104,10 +113,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c810d77f7acbe3347862d52ec4c4d830e8cb1e726e65ceb8913dbc6ad6841f7"
 dependencies = [
  "crypto-bigint",
+ "gmcrypto-simd",
  "rand_core",
  "spin",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "gmcrypto-simd"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db6ab70e0e607a7a5115ca35f5d2a1a36de1c13a21ff18c9debdaf2d7b40ea99"
+dependencies = [
+ "cpufeatures",
 ]
 
 [[package]]
