@@ -38,7 +38,7 @@ The demo key is fixed and public. Do not use it for real data.
 
 ## Examples
 
-Runnable, self-verifying examples covering the full `gmcrypto-core` surface live
+Runnable, self-verifying examples covering the everyday `gmcrypto-core` surface live
 in [`examples/`](examples/). Each narrates what it does and asserts its own
 round-trips, so it doubles as a smoke test.
 
@@ -61,3 +61,6 @@ features respectively.
 ```bash
 cargo test
 ```
+
+`cargo test` covers the CLI. The examples above are runnable smoke tests too —
+CI runs all eight (six default plus the two feature-gated) on every push.
