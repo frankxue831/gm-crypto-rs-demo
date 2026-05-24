@@ -16,7 +16,7 @@ pub fn sample_private_key() -> Sm2PrivateKey {
     let bytes: [u8; 32] = decode_hex(SAMPLE_PRIVATE_KEY_HEX)
         .expect("sample private key hex is valid")
         .try_into()
-        .expect("sample private key is 32 bytes");
+        .expect("decoded sample key must be exactly 32 bytes");
     Sm2PrivateKey::from_bytes_be(&bytes).expect("sample private key is valid")
 }
 
