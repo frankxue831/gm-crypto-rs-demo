@@ -80,7 +80,7 @@ it — never a path / workspace / git dependency:
 
 ```toml
 [dependencies]
-gmcrypto-core = "=0.12.0"
+gmcrypto-core = "=0.16.0"
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 rand_core = "0.10.1"
 ```
@@ -116,7 +116,7 @@ pub fn os_rng() -> UnwrapErr<SysRng> {
 
 ### Load the sample key
 
-The guide reuses one fixed GB/T 32918.2 sample private key. In 0.12 the
+The guide reuses one fixed GB/T 32918.2 sample private key. In 0.16 the
 recommended constructor is `from_bytes_be` over a 32-byte big-endian scalar:
 
 ```rust
@@ -385,7 +385,7 @@ won't complain.
 (AEAD)**: it encrypts *and* authenticates in one step, so tampering is detected on
 decrypt. This should be your default for symmetric encryption.
 
-> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=0.12.0", features = ["sm4-aead"] }`.
+> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=0.16.0", features = ["sm4-aead"] }`.
 > SM4-CCM lives in the same feature via `sm4::mode_ccm`.
 
 ### Correct usage

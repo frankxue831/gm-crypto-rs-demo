@@ -46,7 +46,11 @@ fn main() {
     let iv = [0x11u8; 16];
     let enc = pkcs8::encrypt(&key, password, salt, 10_000, &iv).expect("encrypt pkcs8");
     let dec = pkcs8::decrypt(&enc, password).expect("decrypt pkcs8");
-    assert_eq!(dec.to_bytes_be(), expected_scalar, "encrypted PKCS#8 round-trip");
+    assert_eq!(
+        dec.to_bytes_be(),
+        expected_scalar,
+        "encrypted PKCS#8 round-trip"
+    );
     assert!(
         pkcs8::decrypt(&enc, b"wrong-password").is_err(),
         "wrong password must be rejected",
