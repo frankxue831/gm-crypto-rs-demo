@@ -32,7 +32,10 @@ fn main() {
     let enc = block;
     cipher.decrypt_block(&mut block);
     assert_eq!(block, [0u8; 16], "block decrypt must invert encrypt");
-    println!("raw block: encrypt then decrypt returns the original (ct = {})", encode_hex(&enc));
+    println!(
+        "raw block: encrypt then decrypt returns the original (ct = {})",
+        encode_hex(&enc)
+    );
 
     println!("\nOK");
 }

@@ -18,9 +18,17 @@ fn main() {
     assert_ne!(ct1, ct2, "fresh nonce -> different ciphertext each time");
 
     let recovered = decrypt(&key, &ct1).expect("decrypt");
-    assert_eq!(&recovered[..], &plaintext[..], "decrypt must recover plaintext");
+    assert_eq!(
+        &recovered[..],
+        &plaintext[..],
+        "decrypt must recover plaintext"
+    );
     let recovered2 = decrypt(&key, &ct2).expect("decrypt");
-    assert_eq!(&recovered2[..], &plaintext[..], "decrypt must recover plaintext");
+    assert_eq!(
+        &recovered2[..],
+        &plaintext[..],
+        "decrypt must recover plaintext"
+    );
     println!("  both ciphertexts decrypt back to the plaintext");
 
     // SM2 decryption verifies the embedded C3 hash, so corrupted input is

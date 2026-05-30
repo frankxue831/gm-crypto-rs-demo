@@ -27,7 +27,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
 - `examples/` — 8 self-verifying cookbook examples; CI builds and runs them all.
 
 ## Gotchas
-- **Keep the pin exact:** `gmcrypto-core = "=0.12.0"` — never a path/workspace/git
+- **Keep the pin exact:** `gmcrypto-core = "=0.16.0"` — never a path/workspace/git
   dep (it would defeat the published-crate smoke test).
 - **Gated examples** `sm4_aead`/`sm4_xts` need `--features sm4-aead`/`sm4-xts`; the
   default build stays lean (no `gmcrypto-simd`). Lint with those features to cover them.
