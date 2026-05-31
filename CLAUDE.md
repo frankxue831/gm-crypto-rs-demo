@@ -44,7 +44,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
 ## Bilingual docs (`.zh-CN.md` pairs)
 
 - `docs/using-gmcrypto-core.md` ↔ `docs/using-gmcrypto-core.zh-CN.md` — keep code blocks byte-identical (CI enforces via `scripts/check-doc-sync.sh`).
-- `README.md` ↔ `README.zh-CN.md` (stub in Phase 1; full translation Phase 2).
+- `README.md` ↔ `README.zh-CN.md` — also drift-checked by `scripts/check-doc-sync.sh`.
 - Terminology lives in `docs/glossary.md` — single source of truth, no inline glosses.
 - Substantive prose changes must ship both languages in the same PR, or add a `> ⚠️ 本节落后于英文版` banner until they catch up.
 - Full policy: see `AGENTS.md` "Bilingual Documentation" section and `docs/superpowers/specs/2026-05-31-bilingual-docs-design.md`.
