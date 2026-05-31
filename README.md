@@ -1,5 +1,7 @@
 # gm-crypto-rs-demo
 
+> 🌐 [English](README.md) · [简体中文](README.zh-CN.md) · [📚 Guide](docs/using-gmcrypto-core.md) · [📚 中文指南](docs/using-gmcrypto-core.zh-CN.md)
+
 Downstream SDK tour for the published [`gmcrypto-core`](https://crates.io/crates/gmcrypto-core)
 crate.
 
