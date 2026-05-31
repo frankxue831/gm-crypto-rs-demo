@@ -349,3 +349,114 @@ let key3 = pkcs8::decrypt(&enc, password).expect("decrypt");
 **对应示例:** `cargo run --example sm2_key_encoding`
 
 ---
+
+<a id="6-sm4-symmetric-encryption-cbc-and-ctr"></a>
+## §6 SM4 对称加密：CBC 与 CTR
+
+**它是什么:** SM4 是 GM/T 的 128 位分组密码(GB/T 32907-2016),是 SM 家族中
+对应 AES 的算法。CBC 和 CTR 是经典的工作模式,**仅提供机密性**。
+
+<a id="correct-usage-2"></a>
+### 正确用法
+
+```rust
+use gmcrypto_core::sm4::{mode_cbc, mode_ctr};
+
+// CBC needs a 16-byte IV
+let ct = mode_cbc::encrypt(&key, &iv, plaintext);
+let pt = mode_cbc::decrypt(&key, &iv, &ct).expect("cbc");
+
+// CTR needs a 16-byte initial counter block
+let ct = mode_ctr::encrypt(&key, &counter, plaintext);
+let pt = mode_ctr::decrypt(&key, &counter, &ct);
+```
+
+原始的单块原语(`Sm4Cipher::new(&key).encrypt_block(&mut block)`)也可使用,
+但你几乎总是需要某种工作模式,而不是裸的分组操作。
+
+<a id="the-one-rule-that-matters-never-reuse-the-iv--counter-under-a-key"></a>
+### 唯一重要的规则：同一密钥下绝不重用 IV / 计数器
+
+> - ⚠️ **CTR:** 重用 `(key, counter)` 对会泄漏两段明文的 XOR —— 后果是灾难性的。
+> - ⚠️ **CBC:** 可预测或被重用的 IV 会使其遭受选择明文攻击。
+> - ✅ **该做:** 为每条消息生成全新的随机 IV / 计数器,并与密文一起存储或发送(它本身不是秘密)。
+
+<a id="bigger-caveat-these-are-unauthenticated"></a>
+### 更大的注意事项：这些模式不带认证
+
+CBC 和 CTR 无法检测篡改 —— 攻击者可以翻转比特,而解密不会报错。
+
+> ✅ **该做:** 优先使用 **SM4-GCM**([§7](#7-sm4-authenticated-encryption-gcm-and-ccm))。
+> 如果必须使用 CBC / CTR,请在密文之上叠加一层 HMAC-SM3(先加密后 MAC)。
+
+**对应示例:** `cargo run --example sm4_cbc_ctr`
+
+---
+
+<a id="7-sm4-authenticated-encryption-gcm-and-ccm"></a>
+## §7 SM4 认证加密：GCM 与 CCM
+
+**它是什么:** SM4-GCM 是**带关联数据的认证加密(AEAD)**:它在一步内同时
+完成加密*与*认证,因此解密时能检测出篡改。这应是你做对称加密时的默认选择。
+
+> 🧩 **需要开启特性:** `gmcrypto-core = { version = "=0.16.0", features = ["sm4-aead"] }`。
+> SM4-CCM 位于同一特性之下,通过 `sm4::mode_ccm` 使用。
+
+<a id="correct-usage-3"></a>
+### 正确用法
+
+```rust
+use gmcrypto_core::sm4::mode_gcm;
+
+let nonce = /* 12 random bytes, unique per key */;
+let (ciphertext, tag) = mode_gcm::encrypt(&key, &nonce, aad, plaintext);
+
+// decrypt returns None if the ciphertext, tag, OR aad was altered
+let pt = mode_gcm::decrypt(&key, &nonce, aad, &ciphertext, &tag).expect("auth ok");
+```
+
+`aad`(关联数据)会被认证但**不会**被加密 —— 用它承载那些必须与密文绑定、
+但可以明文传输的头部 / 元数据。
+
+<a id="do--dont-5"></a>
+### Do / Don't
+
+> - ⚠️ **不该做:绝不重用 `(key, nonce)` 对。** GCM 中重用 nonce 是灾难性的 —— 会泄漏认证密钥。每条消息都应使用全新的 96 位 nonce。
+> - ✅ **该做:** 把 `decrypt` 返回的 `None` 视为"拒绝" —— 绝不退而求其次地使用那些字节。
+> - ✅ **该做:** 把你必须信任的元数据(版本、头部、接收方)放进 `aad`。
+
+**对应示例:** `cargo run --features sm4-aead --example sm4_aead`
+
+---
+
+<a id="8-sm4-xts-disk-and-sector-encryption"></a>
+## §8 SM4-XTS 磁盘/扇区加密
+
+**它是什么:** SM4-XTS 是为块存储上的**静态存储**数据设计的模式 ——
+全盘加密、扇区、文件 —— 在这些场景中,密文长度不能增长。每个数据单元
+都用一个 **tweak**(通常是其扇区号)进行加密。
+
+> 🧩 **需要开启特性:** `features = ["sm4-xts"]`。
+
+<a id="correct-usage-4"></a>
+### 正确用法
+
+```rust
+use gmcrypto_core::sm4::mode_xts;
+
+// 32-byte key = TWO distinct 16-byte subkeys; identical halves are rejected (GB/T 17964)
+let ct = mode_xts::encrypt(&key32, &tweak, sector).expect("xts");   // data unit >= 16 bytes
+let pt = mode_xts::decrypt(&key32, &tweak, &ct).expect("xts");
+```
+
+<a id="do--dont-6"></a>
+### Do / Don't
+
+> - ⚠️ **XTS 不带认证。** 用错误的 tweak(或被篡改的密文)解密只会返回*乱码*,不会报错。它在磁盘上保护机密性,而不是完整性。
+> - ✅ **该做:** 使用存储位置(扇区索引)作为 tweak。
+> - ✅ **该做:** 确保两个密钥半部互不相同。
+> - ⚠️ **不该做:** 不要用 XTS 加密传输中的消息 —— 当你需要篡改检测时,请使用 SM4-GCM([§7](#7-sm4-authenticated-encryption-gcm-and-ccm))。
+
+**对应示例:** `cargo run --features sm4-xts --example sm4_xts`
+
+---
