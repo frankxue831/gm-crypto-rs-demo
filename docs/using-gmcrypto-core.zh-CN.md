@@ -460,3 +460,67 @@ let pt = mode_xts::decrypt(&key32, &tweak, &ct).expect("xts");
 **对应示例:** `cargo run --features sm4-xts --example sm4_xts`
 
 ---
+
+<a id="9-doing-crypto-correctly-cross-cutting-review"></a>
+## §9 正确做加密（横向回顾）
+
+贯穿每个原语的原则。如果本指南其他内容你都忘了,请记住这些。
+
+<a id="1-randomness"></a>
+### 1. 随机性
+
+密钥、nonce、IV、盐值始终从操作系统的 CSPRNG 取得。在本 SDK 中,这就是用
+`rand_core::UnwrapErr` 包装的 `getrandom::SysRng`
+([§0](#0-getting-started-setup-rng-and-helpers))。绝不能用常量,也不能用低熵种子。
+
+<a id="2-uniqueness-of-nonces--ivs--counters"></a>
+### 2. nonce / IV / 计数器的唯一性
+
+| Mode | 需要唯一的值 | 重用的代价 |
+|---|---|---|
+| SM4-CTR | 初始计数器 | 泄漏两段明文的 XOR |
+| SM4-CBC | IV | 容易遭受选择明文攻击 |
+| SM4-GCM | 96 位 nonce | **灾难性** —— 可能泄漏认证密钥 |
+| SM4-XTS | tweak(每扇区一个) | 相同明文块在跨扇区时会泄漏 |
+
+每条消息都重新生成;nonce 或 IV 与密文一起传输 / 存储 —— 它们不是秘密。
+
+<a id="3-authentication"></a>
+### 3. 认证
+
+加密 ≠ 完整性。CBC、CTR、XTS 都不带认证。默认选用 **SM4-GCM**;否则先加密后用
+HMAC-SM3 做 MAC。任何认证失败(`Err` / `None` / `false`)都必须视为“拒绝”,绝
+不能“反正用这些字节”。
+
+<a id="4-key-derivation-and-passwords"></a>
+### 4. 密钥派生与口令
+
+绝不要对口令做原始哈希存储。使用 PBKDF2-HMAC-SM3,配合唯一的随机盐值和较高的
+迭代次数(OWASP 建议 ≥ 600,000)。演示中的 10,000 仅为提速所用。
+
+<a id="5-constant-time-comparison"></a>
+### 5. 恒定时间比较
+
+比较 MAC / 标签时使用所提供的 `verify()`(恒定时间),而不是 `==`。
+
+<a id="6-key-management"></a>
+### 6. 密钥管理
+
+私钥保存为加密的 `PKCS#8`,口令置于源码控制之外。公钥以 `SPKI` / `PEM` 形式
+分享。轮换密钥;不要把同一把密钥用于互不相关的用途。
+
+<a id="7-pick-the-right-tool"></a>
+### 7. 选用合适的工具
+
+| Goal | Use |
+|---|---|
+| 指纹 / 完整性校验 | SM3 |
+| 证明消息出处(共享密钥) | HMAC-SM3 |
+| 证明出处(可公开验证) | SM2 signature |
+| 向某人加密一段小数据 | SM2 encryption |
+| 批量加密(带完整性) | SM4-GCM |
+| 加密磁盘上的静态数据 | SM4-XTS |
+| 把口令转换为密钥 | PBKDF2-HMAC-SM3 |
+
+> ⚠️ **请牢记:** 本演示中的每一把密钥、nonce、盐值和口令都是公开的演示样例。
+> 生产代码必须自行生成。
