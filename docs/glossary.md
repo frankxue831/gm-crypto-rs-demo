@@ -39,3 +39,10 @@ API names, crate names, commands, filenames, feature flags, error messages, and 
 | side channel | 侧信道 | |
 | sample / fixture | 示例 / 测试用例 | "demo fixture" → 演示用样例 |
 | production-safe | 生产安全 | "not production-safe" → 非生产安全 |
+| catastrophic | 灾难性 | as in "nonce reuse in GCM is catastrophic" |
+| scalar | 标量 | as in "32-byte big-endian scalar" for SM2 private keys |
+| cross-cutting | 横向 | as in "cross-cutting review" → 横向回顾 |
+| password | 口令 | preferred over 密码 to avoid ambiguity with "cipher" (密码 also means cipher in Chinese) |
+| authenticated encryption | 认证加密 | full form of AEAD |
+| non-repudiation | 不可抵赖性 | core property of digital signatures |
+| hybrid (encryption pattern) | 混合加密 | as in "SM2-wraps-SM4-GCM hybrid pattern" |

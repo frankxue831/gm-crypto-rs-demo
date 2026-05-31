@@ -148,7 +148,7 @@ let public = Sm2PublicKey::from_point(key.public_key());
 **是什么:** SM3 是 GM/T 标准定义的 256 位密码学哈希(GB/T 32905-2016)——
 SM 家族中对应于 SHA-256 的成员。
 
-<a id="whats-it-for"></a>
+<a id="what-its-for"></a>
 ### 用途
 
 完整性校验与指纹标识:校验和、去重键、内容寻址,以及作为 HMAC、PBKDF2
