@@ -240,3 +240,112 @@ pbkdf2_hmac_sm3(password, salt, 600_000, &mut derived).expect("kdf");
 **对应示例:** `cargo run --example hmac_and_kdf`
 
 ---
+
+<a id="3-sm2-digital-signatures"></a>
+## §3 SM2 数字签名
+
+**它是什么:** SM2 是 GM/T 椭圆曲线密码体系(GB/T 32918)。签名带来**真实性**与**不可抵赖性**:私钥持有者进行签名,任何拥有公钥的人都可以验证。
+
+<a id="the-signer-id-and-z"></a>
+### 签名者 ID 与 Z 值
+
+SM2 会把签名者身份哈希(`Z`)折入消息哈希。除非协议另有规定,否则使用 `DEFAULT_SIGNER_ID` —— 而且签名方与验证方**必须**使用同一个。
+
+```rust
+use gmcrypto_core::sm2::{sign_with_id, verify_with_id, DEFAULT_SIGNER_ID};
+
+let mut rng = os_rng();
+let sig = sign_with_id(&key, DEFAULT_SIGNER_ID, msg, &mut rng).expect("sign");
+let ok  = verify_with_id(&public, DEFAULT_SIGNER_ID, msg, &sig); // -> bool
+```
+
+SM2 签名是**随机化**的:对同一条消息签两次会得到两个不同(但都有效)的签名。这是预期行为,不是 bug。
+
+<a id="do--dont-2"></a>
+### Do / Don't
+
+> - ✅ **该做:** 用与签名时*相同*的签名者 ID 进行验证。
+> - ✅ **该做:** 给签名传入一个新的 OS RNG([§0](#0-getting-started-setup-rng-and-helpers))。
+> - ⚠️ **不该做:** 假设签名是确定性的,或按相等性比较签名。
+> - ⚠️ **不该做:** 把签名(真实性)与加密(机密性)混为一谈 —— 它们解决的是不同的问题。
+
+**对应示例:** `cargo run --example sm2_sign_verify`
+
+---
+
+<a id="4-sm2-public-key-encryption"></a>
+## §4 SM2 公钥加密
+
+**它是什么:** SM2 可以用接收者的公钥进行加密(GB/T 32918.4)。只有持有对应私钥的人才能解密。
+
+<a id="correct-usage-1"></a>
+### 正确用法
+
+```rust
+use gmcrypto_core::sm2::{encrypt, decrypt};
+
+let mut rng = os_rng();
+let ciphertext = encrypt(&public, plaintext, &mut rng).expect("encrypt"); // DER bytes
+let recovered  = decrypt(&key, &ciphertext).expect("decrypt");
+```
+
+加密是随机化的 —— 每次调用产生的密文都不同。解密会校验内嵌的 `C3` 哈希,因此被破坏的密文会被**拒绝**(返回 `Err`),而不是被悄悄地解出错误内容。
+
+<a id="when-to-use-it"></a>
+### 何时使用
+
+SM2 加密适用于**小**载荷 —— 通常是封装一个对称密钥或一段较短的秘密。批量数据请使用**混合加密**方案:生成一个随机的 SM4 密钥,用 SM4-GCM([§7](#7-sm4-authenticated-encryption-gcm-and-ccm))加密数据,再用 SM2 加密这个 SM4 密钥。
+
+<a id="do--dont-3"></a>
+### Do / Don't
+
+> - ✅ **该做:** 用 SM2 封装一个对称密钥,再用 SM4 加密载荷。
+> - ✅ **该做:** 把解密返回的 `Err` 当作"拒绝此消息",而不是"重试"。
+> - ⚠️ **不该做:** 用 SM2 直接加密大块数据 —— 它很慢,也并非为此设计。
+
+**对应示例:** `cargo run --example sm2_encrypt_decrypt`
+
+---
+
+<a id="5-sm2-key-management-and-serialization"></a>
+## §5 SM2 密钥管理与序列化
+
+**它是什么:** 如何以标准格式存储、加载和交换 SM2 密钥 —— 以及如何在静态存储时保护私钥。
+
+<a id="the-formats"></a>
+### 编码格式
+
+- **`PKCS#8`** —— 标准的私钥容器(`DER`)。
+- **`SEC1`** —— EC 私钥编码。
+- **`SPKI`** —— 标准的公钥容器(`DER`)。
+- **`PEM`** —— 包裹上述任一种的 base64 文本封装。
+- **`加密的 PKCS#8`** —— 用口令加密后的私钥。
+
+```rust
+use gmcrypto_core::{pem, pkcs8, sec1, spki};
+
+// Private key -> PKCS#8 DER -> PEM and back
+let der = pkcs8::encode(&key);
+let pem_str = pem::encode("PRIVATE KEY", &der);
+let der2 = pem::decode(&pem_str, "PRIVATE KEY").expect("pem");
+let key2 = pkcs8::decode(&der2).expect("pkcs8");
+
+// Public key -> SPKI DER
+let spki_der = spki::encode(&key.public_key());
+
+// Private key at rest -> encrypted PKCS#8 (a wrong password is rejected)
+let enc = pkcs8::encrypt(&key, password, salt, 600_000, &iv).expect("encrypt");
+let key3 = pkcs8::decrypt(&enc, password).expect("decrypt");
+```
+
+<a id="do--dont-4"></a>
+### Do / Don't
+
+> - ✅ **该做:** 把私钥以**加密的** `PKCS#8` 形式存储,使用随机的盐值 + IV 以及较高的迭代次数。
+> - ✅ **该做:** 以 `SPKI` / `PEM` 形式分发公钥,便于互通。
+> - ⚠️ **不该做:** 把私钥(无论是否加密)或其口令提交到源码仓库。
+> - ⚠️ **不该做:** 在多个密钥之间复用同一个加密盐值或 IV。
+
+**对应示例:** `cargo run --example sm2_key_encoding`
+
+---
