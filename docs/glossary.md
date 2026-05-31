@@ -46,3 +46,6 @@ API names, crate names, commands, filenames, feature flags, error messages, and 
 | authenticated encryption | 认证加密 | full form of AEAD |
 | non-repudiation | 不可抵赖性 | core property of digital signatures |
 | hybrid (encryption pattern) | 混合加密 | as in "SM2-wraps-SM4-GCM hybrid pattern" |
+| smoke test | 冒烟测试 | as in "downstream smoke-test demo" |
+| downstream | 下游 | as in "downstream consumer of the published crate" |
+| tour | 演示巡览 | the CLI walkthrough; the `tour` subcommand name itself stays English in backticks |

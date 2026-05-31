@@ -117,20 +117,28 @@ This repo ships bilingual prose docs (English + Simplified Chinese). The
 file layout is mirror-by-suffix: `<name>.zh-CN.md` lives next to its
 English sibling. Examples (`examples/*.rs`) stay English.
 
+**Mirrored pairs in scope:**
+
+- `docs/using-gmcrypto-core.md` ↔ `docs/using-gmcrypto-core.zh-CN.md`
+- `README.md` ↔ `README.zh-CN.md`
+
+Both pairs are drift-checked in CI by `scripts/check-doc-sync.sh`.
+
 **Shipping policy:**
 
-- Substantive changes to `docs/using-gmcrypto-core.md` must ship a matching
-  `docs/using-gmcrypto-core.zh-CN.md` edit in the same PR.
+- Substantive changes to either English file (the guide or the README) must
+  ship a matching `.zh-CN.md` edit in the same PR.
 - If an urgent fix cannot be paired with a Chinese translation, the affected
-  section of `docs/using-gmcrypto-core.zh-CN.md` must carry a top banner
-  until the translation catches up:
+  section of the Chinese sibling must carry a top banner until the
+  translation catches up:
 
   ```markdown
   > ⚠️ 本节落后于英文版,请以英文版为准。Last synced: <commit-sha-short>
   ```
 
-- Code blocks (Rust/shell/TOML) inside the two guide files must be
-  byte-identical. This is enforced by `scripts/check-doc-sync.sh` in CI.
+- Code blocks (Rust/shell/TOML) inside each mirrored pair must be
+  byte-identical. This is enforced by `scripts/check-doc-sync.sh` in CI for
+  every pair listed above.
 - Terminology is governed by `docs/glossary.md` — add new terms there first,
   then use them in prose. No inline first-use glosses.
 - Tie-breaker when translation conventions conflict: **correctness/safety > idiomatic Chinese > 1:1 structural mirror.**
