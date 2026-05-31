@@ -1,5 +1,9 @@
 # Using `gmcrypto-core` Correctly — a Practical Guide
 
+> 🌐 **Language / 语言:** **English** | [简体中文](using-gmcrypto-core.zh-CN.md)
+
+> 📖 **Glossary:** Terminology is governed by [`glossary.md`](glossary.md) — used by both this guide and its Chinese counterpart.
+
 A hands-on guide to using the published [`gmcrypto-core`](https://crates.io/crates/gmcrypto-core)
 crate (GM/T **SM2 / SM3 / SM4**) the *right* way, from a downstream consumer's
 point of view. Every snippet here is drawn from the runnable, self-verifying
