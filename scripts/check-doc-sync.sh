@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # scripts/check-doc-sync.sh
-# Verifies that an English doc and its .zh-CN.md sibling stay structural
+# Verifies that an English doc and its .zh-CN.md sibling stay in structural
 # sync: identical fenced code blocks (in count and content) and equal H2/H3
 # heading counts. See docs/superpowers/specs/2026-05-31-bilingual-docs-design.md.
 set -euo pipefail
