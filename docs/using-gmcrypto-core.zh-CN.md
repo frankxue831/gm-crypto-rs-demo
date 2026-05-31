@@ -141,3 +141,102 @@ let public = Sm2PublicKey::from_point(key.public_key());
 `sample_private_key()`、`sample_public_key()`、`encode_hex()` / `decode_hex()`。
 
 ---
+
+<a id="1-sm3-hashing"></a>
+## §1 SM3 哈希
+
+**是什么:** SM3 是 GM/T 标准定义的 256 位密码学哈希(GB/T 32905-2016)——
+SM 家族中对应于 SHA-256 的成员。
+
+<a id="whats-it-for"></a>
+### 用途
+
+完整性校验与指纹标识:校验和、去重键、内容寻址,以及作为 HMAC、PBKDF2
+和 SM2 签名内部的构建模块。哈希提供的是一份防篡改指纹 —— **不**提供保密性,
+也**不**提供身份认证。
+
+<a id="correct-usage"></a>
+### 正确用法
+
+一次性调用:
+
+```rust
+use gmcrypto_core::sm3;
+let digest = sm3::hash(b"abc"); // [u8; 32]
+```
+
+流式调用,适用于数据不能一次性全部拿到的场景:
+
+```rust
+use gmcrypto_core::sm3::Sm3;
+let mut hasher = Sm3::new();
+hasher.update(b"a");
+hasher.update(b"bc");
+let digest = hasher.finalize(); // identical to sm3::hash(b"abc")
+```
+
+<a id="do--dont"></a>
+### Do / Don't
+
+> - ✅ **该做:** 对于大数据,用 `update()` 流式喂入,而不是先在内存里拼接。
+> - ✅ **该做:** 把 SM3 用于完整性校验,以及作为 HMAC / 签名的输入。
+> - ⚠️ **不该做:** 用 SM3 直接对裸口令做哈希再存储 —— 请改用 PBKDF2-HMAC-SM3([§2](#2-message-authentication-and-key-derivation-hmac-sm3-pbkdf2))。
+> - ⚠️ **不该做:** 把哈希当作身份认证 —— 任何人都能重新计算出来。要证明来源请使用 HMAC 或签名。
+
+**对应示例:** `cargo run --example sm3_hashing`
+
+---
+
+<a id="2-message-authentication-and-key-derivation-hmac-sm3-pbkdf2"></a>
+## §2 消息认证与密钥派生(HMAC-SM3, PBKDF2)
+
+**是什么:** 两个建立在 SM3 之上的带密钥构造。HMAC-SM3 用于证明消息出自
+持有共享密钥的一方;PBKDF2-HMAC-SM3 则把口令拉伸成密钥材料。
+
+<a id="hmac-sm3--authenticate-a-message"></a>
+### HMAC-SM3 — 消息认证
+
+```rust
+use gmcrypto_core::hmac::{hmac_sm3, HmacSm3};
+
+let tag = hmac_sm3(key, msg);        // one-shot -> [u8; 32]
+
+let mut mac = HmacSm3::new(key);     // streaming
+mac.update(b"authenticated ");
+mac.update(b"message");
+let tag = mac.finalize();
+```
+
+使用内建的**恒定时间**校验来验证 —— 绝不要用 `==`:
+
+```rust
+let mut mac = HmacSm3::new(key);
+mac.update(msg);
+assert!(mac.verify(&tag));            // constant-time comparison
+```
+
+> ⚠️ **不该做:** 用 `tag == expected` 比较认证标签 —— 逐字节 `==` 会泄露
+> 时间信息,从而被用于伪造。请使用 `verify()`。
+
+<a id="pbkdf2-hmac-sm3--derive-a-key-from-a-password"></a>
+### PBKDF2-HMAC-SM3 — 从密码派生密钥
+
+```rust
+use gmcrypto_core::kdf::pbkdf2_hmac_sm3;
+let mut derived = [0u8; 32];
+pbkdf2_hmac_sm3(password, salt, 600_000, &mut derived).expect("kdf");
+```
+
+相同口令 + 相同盐值始终派生出相同的密钥;盐值不同则结果发散。
+
+<a id="do--dont-1"></a>
+### Do / Don't
+
+> - ✅ **该做:** 为每个口令使用唯一的随机盐值(≥ 16 字节)。
+> - ✅ **该做:** 选择较高的迭代次数 —— OWASP 建议 **≥ 600,000**。(示例中使用 10,000 仅是为了运行得快。)
+> - ⚠️ **不该做:** 在多个用户之间复用同一盐值,或把盐值硬编码。
+> - ⚠️ **不该做:** 用裸的 SM3 哈希做口令存储。
+
+**对应示例:** `cargo run --example hmac_and_kdf`
+
+---
