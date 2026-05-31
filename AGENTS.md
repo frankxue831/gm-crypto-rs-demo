@@ -110,3 +110,30 @@ Before delivering a task, all applicable checks must exit with code `0`.
 
 If a required command cannot be run, report the exact command, why it could not
 run, and what risk remains.
+
+## Bilingual Documentation
+
+This repo ships bilingual prose docs (English + Simplified Chinese). The
+file layout is mirror-by-suffix: `<name>.zh-CN.md` lives next to its
+English sibling. Examples (`examples/*.rs`) stay English.
+
+**Shipping policy:**
+
+- Substantive changes to `docs/using-gmcrypto-core.md` must ship a matching
+  `docs/using-gmcrypto-core.zh-CN.md` edit in the same PR.
+- If an urgent fix cannot be paired with a Chinese translation, the affected
+  section of `docs/using-gmcrypto-core.zh-CN.md` must carry a top banner
+  until the translation catches up:
+
+  ```markdown
+  > ⚠️ 本节落后于英文版,请以英文版为准。Last synced: <commit-sha-short>
+  ```
+
+- Code blocks (Rust/shell/TOML) inside the two guide files must be
+  byte-identical. This is enforced by `scripts/check-doc-sync.sh` in CI.
+- Terminology is governed by `docs/glossary.md` — add new terms there first,
+  then use them in prose. No inline first-use glosses.
+- Tie-breaker when translation conventions conflict: **correctness/safety > idiomatic Chinese > 1:1 structural mirror.**
+
+See `docs/superpowers/specs/2026-05-31-bilingual-docs-design.md` for full
+rationale.
