@@ -2,15 +2,13 @@
 //! Run: cargo run --example sm2_sign_verify
 
 use gm_crypto_rs_demo::{encode_hex, os_rng, sample_private_key};
-use gmcrypto_core::sm2::{
-    compute_z, sign_with_id, verify_with_id, Sm2PublicKey, DEFAULT_SIGNER_ID,
-};
+use gmcrypto_core::sm2::{compute_z, sign_with_id, verify_with_id, DEFAULT_SIGNER_ID};
 
 fn main() {
     println!("== SM2 signatures (GB/T 32918.2) ==\n");
 
     let key = sample_private_key();
-    let public = Sm2PublicKey::from_point(key.public_key());
+    let public = key.public_key();
     let message = b"hello";
 
     // Z is the identity hash SM2 folds into the message hash. Shown here for

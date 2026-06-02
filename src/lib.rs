@@ -6,7 +6,6 @@
 
 use getrandom::SysRng;
 use gmcrypto_core::sm2::{Sm2PrivateKey, Sm2PublicKey};
-use rand_core::UnwrapErr;
 
 /// Fixed, public GB/T 32918.2 sample private key scalar (big-endian hex).
 pub const SAMPLE_PRIVATE_KEY_HEX: &str =
@@ -23,16 +22,15 @@ pub fn sample_private_key() -> Sm2PrivateKey {
 
 /// The sample SM2 public key derived from [`sample_private_key`].
 pub fn sample_public_key() -> Sm2PublicKey {
-    Sm2PublicKey::from_point(sample_private_key().public_key())
+    sample_private_key().public_key()
 }
 
-/// The OS CSPRNG, adapted to the `rand_core` traits the SDK expects.
+/// The OS CSPRNG, exposed for the SDK's `TryCryptoRng` bound (gmcrypto-core 1.0+).
 ///
-/// `getrandom::SysRng` is infallible on supported targets; `UnwrapErr`
-/// adapts its `TryRngCore` impl to the infallible `RngCore` the SM2
-/// signing/encryption APIs require.
-pub fn os_rng() -> UnwrapErr<SysRng> {
-    UnwrapErr(SysRng)
+/// `getrandom::SysRng` implements `TryRngCore` and is marked `CryptoRng`, so
+/// it satisfies `TryCryptoRng` directly — no adapter needed since 1.0.
+pub fn os_rng() -> SysRng {
+    SysRng
 }
 
 /// Lowercase-hex encode bytes.

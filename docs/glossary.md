@@ -49,3 +49,4 @@ API names, crate names, commands, filenames, feature flags, error messages, and 
 | smoke test | 冒烟测试 | as in "downstream smoke-test demo" |
 | downstream | 下游 | as in "downstream consumer of the published crate" |
 | tour | 演示巡览 | the CLI walkthrough; the `tour` subcommand name itself stays English in backticks |
+| wire format | 线上字节格式 | the on-the-wire byte representation of signatures / ciphertexts / SM4 mode outputs; frozen as of `gmcrypto-core 1.0.0` and identical to the prior 0.16.0 line |

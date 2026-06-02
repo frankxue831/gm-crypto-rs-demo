@@ -24,6 +24,14 @@ nonces, weak KDF settings, unauthenticated ciphertext, leaked key material.
 > is a fixed _public fixture_.** They exist to make snippets reproducible. Never
 > reuse them for real data — generate fresh, random secrets in production.
 
+> 🛡️ **SDK stability (1.0+):** As of `gmcrypto-core 1.0.0` (2026-06-01) the SDK
+> graduates to SemVer-stable. The **wire format** — the byte representation of
+> SM2 signatures, SM2 ciphertexts, and SM4 mode outputs — is **frozen** and
+> identical to the prior `0.16.0` line (upstream confirms via KAT + gmssl
+> interop 11/11). Breaking *API-shape* changes go through major version bumps,
+> enforced upstream by `cargo-semver-checks`; outputs serialized under 0.16.0
+> remain readable and verifiable here.
+
 ## The golden rules
 
 1. **Use a real CSPRNG.** Source randomness from the OS (`getrandom::SysRng`),
@@ -84,7 +92,7 @@ it — never a path / workspace / git dependency:
 
 ```toml
 [dependencies]
-gmcrypto-core = "=0.16.0"
+gmcrypto-core = "=1.0.0"
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 rand_core = "0.10.1"
 ```
@@ -389,7 +397,7 @@ won't complain.
 (AEAD)**: it encrypts *and* authenticates in one step, so tampering is detected on
 decrypt. This should be your default for symmetric encryption.
 
-> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=0.16.0", features = ["sm4-aead"] }`.
+> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=1.0.0", features = ["sm4-aead"] }`.
 > SM4-CCM lives in the same feature via `sm4::mode_ccm`.
 
 ### Correct usage
