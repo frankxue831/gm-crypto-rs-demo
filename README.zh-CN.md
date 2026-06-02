@@ -7,7 +7,7 @@
 本仓库刻意依赖 crates.io 上的发布版本:
 
 ```toml
-gmcrypto-core = "=0.16.0"
+gmcrypto-core = "=1.0.0"
 ```
 
 它没有 path / workspace 依赖,不引用本地 `gm-crypto-rs` 检出。因此本仓库可作为冒烟测试,验证外部用户从已发布 crate 实际拿到的内容。
