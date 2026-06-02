@@ -2,7 +2,6 @@
 //! Run: cargo run --example sm2_key_encoding
 
 use gm_crypto_rs_demo::sample_private_key;
-use gmcrypto_core::sm2::Sm2PublicKey;
 use gmcrypto_core::{pem, pkcs8, sec1, spki};
 
 fn main() {
@@ -10,7 +9,7 @@ fn main() {
 
     let key = sample_private_key();
     let expected_scalar = key.to_bytes_be();
-    let public = Sm2PublicKey::from_point(key.public_key());
+    let public = key.public_key();
 
     let der = pkcs8::encode(&key);
     let pem_str = pem::encode("PRIVATE KEY", &der);
@@ -26,10 +25,8 @@ fn main() {
     assert_eq!(ec.scalar_be, expected_scalar, "SEC1 round-trip");
     println!("SEC1 EC private key round-trips");
 
-    let point = key.public_key();
-    let spki_der = spki::encode(&point);
-    let point_back = spki::decode(&spki_der).expect("spki decode");
-    let pub_back = Sm2PublicKey::from_point(point_back);
+    let spki_der = spki::encode(&public);
+    let pub_back = spki::decode(&spki_der).expect("spki decode");
     assert_eq!(
         pub_back.to_sec1_uncompressed(),
         public.to_sec1_uncompressed(),

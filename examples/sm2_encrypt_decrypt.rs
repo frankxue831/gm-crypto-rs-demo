@@ -2,13 +2,13 @@
 //! Run: cargo run --example sm2_encrypt_decrypt
 
 use gm_crypto_rs_demo::{encode_hex, os_rng, sample_private_key};
-use gmcrypto_core::sm2::{decrypt, encrypt, Sm2PublicKey};
+use gmcrypto_core::sm2::{decrypt, encrypt};
 
 fn main() {
     println!("== SM2 public-key encryption (GB/T 32918.4) ==\n");
 
     let key = sample_private_key();
-    let public = Sm2PublicKey::from_point(key.public_key());
+    let public = key.public_key();
     let plaintext = b"secret message";
 
     let mut rng = os_rng();

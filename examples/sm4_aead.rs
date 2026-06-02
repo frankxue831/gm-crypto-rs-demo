@@ -12,7 +12,11 @@ fn main() {
     let aad = b"header-authenticated-not-encrypted";
     let plaintext = b"authenticated and encrypted";
 
-    let (ciphertext, tag) = mode_gcm::encrypt(&key, &nonce, aad, plaintext);
+    // In 1.0, single-shot mode_gcm::encrypt returns Option<…> — it rejects
+    // plaintext above the GCM length ceiling (2^36 − 32 bytes). Our fixed
+    // 27-byte demo input is nowhere near the ceiling, so .expect() is fine.
+    let (ciphertext, tag) = mode_gcm::encrypt(&key, &nonce, aad, plaintext)
+        .expect("plaintext under GCM length ceiling");
     println!("ciphertext = {}", encode_hex(&ciphertext));
     println!("tag        = {}", encode_hex(&tag));
 
