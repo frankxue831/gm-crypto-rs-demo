@@ -35,13 +35,20 @@ fn main() {
     );
     println!("SPKI public key round-trips");
 
-    // In production the salt and IV must be random and unique per encryption
-    // (reusing them under one password risks key recovery), and the iteration
-    // count should be far higher (OWASP suggests >= 600_000). Fixed here for a
-    // reproducible demo.
+    // DEMO ONLY: fixed ASCII password for reproducible encrypted-PKCS#8 demo output.
+    // Production: take the password from user input — never hard-code it; consider passing through Argon2id or a strong KDF before this layer.
+    // Reusing this password risks: any reader of the source can decrypt every encrypted PKCS#8 blob produced with it.
     let password = b"demo-password";
+    // DEMO ONLY: fixed 16-byte ASCII salt for reproducible demo output.
+    // Production: generate a fresh per-blob random salt (>= 16 bytes) via `os_rng()` and store it alongside the encrypted blob.
+    // Reusing this (password, salt) pair risks: rainbow-table / offline dictionary attacks become trivial once the derived key leaks.
     let salt = b"demo-salt-1234567";
+    // DEMO ONLY: fixed 16-byte CBC IV (PKCS#8 wraps the key with PBES2-AES-CBC) for reproducible demo output.
+    // Production: generate a fresh per-blob random IV via `os_rng()` and store it alongside the encrypted blob.
+    // Reusing this (password, salt, IV) triple risks: identical wrappings of identical private keys produce identical ciphertext, leaking key reuse.
     let iv = [0x11u8; 16];
+    // NOTE: 10_000 iterations keeps this example fast. Production PBES2 wrappers
+    // need a far higher count (OWASP suggests >= 600_000 for PBKDF2-HMAC-SHA1; SM3 variants follow the same rule of thumb).
     let enc = pkcs8::encrypt(&key, password, salt, 10_000, &iv).expect("encrypt pkcs8");
     let dec = pkcs8::decrypt(&enc, password).expect("decrypt pkcs8");
     assert_eq!(

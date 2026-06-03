@@ -62,8 +62,9 @@ fn main() {
     // ---- Case 2: 13-byte nonce, 8-byte truncated tag (Zigbee / 802.15.4 shape) ----
     println!("\n-- Case 2: 13-byte nonce, 8-byte tag --");
 
-    // DEMO ONLY: fixed 13-byte CCM nonce (common in 802.15.4 / Zigbee).
-    // Production: fresh per message. Reusing this (key, nonce) pair risks the same break as Case 1.
+    // DEMO ONLY: fixed 13-byte CCM nonce for reproducible demo output (13 bytes is common in 802.15.4 / Zigbee).
+    // Production: generate a fresh random nonce per message via `os_rng()` (or a strictly-monotonic counter that fits 13 bytes).
+    // Reusing this (key, nonce) pair risks: catastrophic for CCM as well as GCM — it breaks confidentiality and authenticity.
     let nonce13 = [0x07u8; 13];
     let tag_len_short = 8;
 
