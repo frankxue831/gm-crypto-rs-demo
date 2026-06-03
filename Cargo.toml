@@ -22,5 +22,13 @@ name = "sm4_aead"
 required-features = ["sm4-aead"]
 
 [[example]]
+name = "sm4_ccm"
+required-features = ["sm4-aead"]
+
+[[example]]
+name = "sm4_streaming"
+required-features = ["sm4-aead"]
+
+[[example]]
 name = "sm4_xts"
 required-features = ["sm4-xts"]

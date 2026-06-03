@@ -434,6 +434,8 @@ let pt = mode_gcm::decrypt(&key, &nonce, aad, &ciphertext, &tag).expect("auth ok
 
 **对应示例:** `cargo run --features sm4-aead --example sm4_aead`
 
+**另见:** `cargo run --features sm4-aead --example sm4_ccm`(SM4-CCM),以及 `cargo run --features sm4-aead --example sm4_streaming`(分块流式 SM4-GCM,使用 Sm4GcmEncryptor / Sm4GcmDecryptor)。
+
 ---
 
 <a id="8-sm4-xts-disk-and-sector-encryption"></a>

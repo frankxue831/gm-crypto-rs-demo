@@ -423,6 +423,8 @@ headers / metadata that must be bound to the ciphertext but can travel in the cl
 
 **Matching example:** `cargo run --features sm4-aead --example sm4_aead`
 
+**See also:** `cargo run --features sm4-aead --example sm4_ccm` for SM4-CCM, and `cargo run --features sm4-aead --example sm4_streaming` for chunked SM4-GCM (Sm4GcmEncryptor / Sm4GcmDecryptor).
+
 ---
 
 ## 8. SM4-XTS disk and sector encryption

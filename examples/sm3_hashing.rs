@@ -1,5 +1,6 @@
 //! SM3 hashing — one-shot and streaming.
 //! Run: cargo run --example sm3_hashing
+//! Safety: §9 rule 1. Randomness, §9 rule 7. Pick the right tool.
 
 use gm_crypto_rs_demo::encode_hex;
 use gmcrypto_core::sm3::{self, Sm3};

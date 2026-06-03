@@ -26,6 +26,24 @@ Run the full walkthrough:
 cargo run -- tour
 ```
 
+## Capability map
+
+Every capability this demo exposes from `gmcrypto-core`, mapped to the CLI subcommand, the cookbook example, and the matching guide section.
+
+| Use case | CLI | Example | Guide § |
+| --- | --- | --- | --- |
+| SM3 hashing (GB/T 32905) | `cargo run -- hash <msg>` | `examples/sm3_hashing.rs` | `§1` |
+| HMAC-SM3 message authentication | `cargo run -- hmac <key-hex> <msg>` | `examples/hmac_and_kdf.rs` | `§2` |
+| PBKDF2-HMAC-SM3 password stretching | `cargo run -- pbkdf2 <pw> <salt-hex> <iter> <len>` | `examples/hmac_and_kdf.rs` | `§2` |
+| SM2 digital signatures (GB/T 32918.2) | `cargo run -- sign` / `verify` | `examples/sm2_sign_verify.rs` | `§3` |
+| SM2 public-key encryption (GB/T 32918.4) | `cargo run -- encrypt` / `decrypt` | `examples/sm2_encrypt_decrypt.rs` | `§4` |
+| SM2 key encoding (PKCS#8 / SEC1 / SPKI / PEM) | `cargo run -- key-info` | `examples/sm2_key_encoding.rs` | `§5` |
+| SM4-CBC / CTR symmetric encryption | `cargo run -- sm4-encrypt` / `sm4-decrypt` | `examples/sm4_cbc_ctr.rs` | `§6` |
+| SM4-GCM authenticated encryption (AEAD) | — | `examples/sm4_aead.rs` (feature `sm4-aead`) | `§7` |
+| SM4-XTS sector / disk encryption | — | `examples/sm4_xts.rs` (feature `sm4-xts`) | `§8` |
+| Cross-cutting correctness checklist | — | — | `§9` |
+| End-to-end walkthrough of every primitive | `cargo run -- tour` | — | `§0`–`§9` |
+
 ## Commands
 
 | Area | Command | Shows |

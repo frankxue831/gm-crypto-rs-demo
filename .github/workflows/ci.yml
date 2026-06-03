@@ -14,6 +14,7 @@ jobs:
           components: clippy
       - run: cargo clippy --all-targets --features "sm4-aead sm4-xts" -- -D warnings
       - run: cargo test
+      - run: cargo test --features "sm4-aead sm4-xts"
       - name: Run default-feature examples
         run: |
           for ex in sm3_hashing hmac_and_kdf sm2_sign_verify sm2_encrypt_decrypt sm2_key_encoding sm4_cbc_ctr; do
@@ -23,6 +24,8 @@ jobs:
       - name: Run feature-gated examples
         run: |
           cargo run --quiet --features sm4-aead --example sm4_aead
+          cargo run --quiet --features sm4-aead --example sm4_ccm
+          cargo run --quiet --features sm4-aead --example sm4_streaming
           cargo run --quiet --features sm4-xts --example sm4_xts
       - name: Check bilingual docs are in sync
         run: ./scripts/check-doc-sync.sh docs/using-gmcrypto-core.md docs/using-gmcrypto-core.zh-CN.md

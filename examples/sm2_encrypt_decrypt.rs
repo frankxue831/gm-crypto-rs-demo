@@ -1,5 +1,6 @@
 //! SM2 public-key encryption — encrypt / decrypt.
 //! Run: cargo run --example sm2_encrypt_decrypt
+//! Safety: §9 rule 1. Randomness, §9 rule 6. Key management, §9 rule 7. Pick the right tool.
 
 use gm_crypto_rs_demo::{encode_hex, os_rng, sample_private_key};
 use gmcrypto_core::sm2::{decrypt, encrypt};
