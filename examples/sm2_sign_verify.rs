@@ -1,5 +1,6 @@
 //! SM2 digital signatures — sign_with_id / verify_with_id.
 //! Run: cargo run --example sm2_sign_verify
+//! Safety: §9 rule 1. Randomness, §9 rule 6. Key management.
 
 use gm_crypto_rs_demo::{encode_hex, os_rng, sample_private_key};
 use gmcrypto_core::sm2::{compute_z, sign_with_id, verify_with_id, DEFAULT_SIGNER_ID};

@@ -1,5 +1,6 @@
 //! SM2 key serialization — PKCS#8, SEC1, SPKI, PEM, encrypted PKCS#8.
 //! Run: cargo run --example sm2_key_encoding
+//! Safety: §9 rule 6. Key management.
 
 use gm_crypto_rs_demo::sample_private_key;
 use gmcrypto_core::{pem, pkcs8, sec1, spki};

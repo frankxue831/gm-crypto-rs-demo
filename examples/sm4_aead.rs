@@ -1,5 +1,6 @@
 //! SM4-GCM authenticated encryption (AEAD). Requires the `sm4-aead` feature.
 //! Run: cargo run --features sm4-aead --example sm4_aead
+//! Safety: §9 rule 1. Randomness, §9 rule 2. Uniqueness of nonces / IVs / counters, §9 rule 3. Authentication.
 
 use gm_crypto_rs_demo::encode_hex;
 use gmcrypto_core::sm4::mode_gcm;
@@ -7,8 +8,14 @@ use gmcrypto_core::sm4::mode_gcm;
 fn main() {
     println!("== SM4-GCM authenticated encryption ==\n");
 
+    // DEMO ONLY: public, fixed 128-bit SM4-GCM key for reproducible demo output.
+    // Production: derive per-session keys via a KDF or unwrap a KEK-wrapped DEK; never hard-code.
+    // Reusing this risks: anyone with the source can decrypt every ciphertext produced with it.
     let key = [0x01u8; 16];
-    let nonce = [0x02u8; 12]; // 96-bit nonce (the standard size); never reuse per key
+    // DEMO ONLY: fixed 96-bit GCM nonce (the standard size) for reproducible demo output.
+    // Production: generate a fresh random nonce per message via `os_rng()` (or a strictly-monotonic counter).
+    // Reusing this (key, nonce) pair risks: catastrophic — recovers the GHASH authentication key, enabling forgery of any ciphertext.
+    let nonce = [0x02u8; 12];
     let aad = b"header-authenticated-not-encrypted";
     let plaintext = b"authenticated and encrypted";
 
@@ -44,7 +51,7 @@ fn main() {
     );
     println!("  tampered ciphertext / tag / AAD are all rejected");
 
-    // SM4-CCM is also available under the same feature via
-    // gmcrypto_core::sm4::mode_ccm.
+    // SM4-CCM is demonstrated in examples/sm4_ccm.rs (same sm4-aead feature).
+    // Streaming SM4-GCM is demonstrated in examples/sm4_streaming.rs.
     println!("\nOK");
 }
