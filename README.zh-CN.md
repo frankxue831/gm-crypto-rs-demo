@@ -99,6 +99,25 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 
 `sm4_aead` 与 `sm4_xts` 示例分别由 `sm4-aead` / `sm4-xts` 特性开关控制。
 
+<a id="capability-map"></a>
+## 能力速查表
+
+本演示从 `gmcrypto-core` 中暴露的每项能力,对应到 CLI 子命令、示例食谱与指南章节。
+
+| 使用场景 | CLI | 示例 | 指南 § |
+| --- | --- | --- | --- |
+| SM3 哈希(GB/T 32905) | `cargo run -- hash <msg>` | `examples/sm3_hashing.rs` | `§1` |
+| HMAC-SM3 消息认证 | `cargo run -- hmac <key-hex> <msg>` | `examples/hmac_and_kdf.rs` | `§2` |
+| PBKDF2-HMAC-SM3 口令拉伸 | `cargo run -- pbkdf2 <pw> <salt-hex> <iter> <len>` | `examples/hmac_and_kdf.rs` | `§2` |
+| SM2 数字签名(GB/T 32918.2) | `cargo run -- sign` / `verify` | `examples/sm2_sign_verify.rs` | `§3` |
+| SM2 公钥加密(GB/T 32918.4) | `cargo run -- encrypt` / `decrypt` | `examples/sm2_encrypt_decrypt.rs` | `§4` |
+| SM2 密钥编码(PKCS#8 / SEC1 / SPKI / PEM) | `cargo run -- key-info` | `examples/sm2_key_encoding.rs` | `§5` |
+| SM4-CBC / CTR 对称加密 | `cargo run -- sm4-encrypt` / `sm4-decrypt` | `examples/sm4_cbc_ctr.rs` | `§6` |
+| SM4-GCM 认证加密(AEAD) | — | `examples/sm4_aead.rs`(特性 `sm4-aead`) | `§7` |
+| SM4-XTS 扇区/磁盘加密 | — | `examples/sm4_xts.rs`(特性 `sm4-xts`) | `§8` |
+| 横切正确性检查清单 | — | — | `§9` |
+| 覆盖所有原语的端到端巡览 | `cargo run -- tour` | — | `§0`–`§9` |
+
 <a id="guide"></a>
 ## 指南
 
