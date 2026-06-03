@@ -11,20 +11,27 @@ on tooling, this file wins.
 ```bash
 cargo fmt --check
 cargo clippy --all-targets --features "sm4-aead sm4-xts" -- -D warnings
-cargo test                                            # tests/cli.rs (CLI smoke tests)
+cargo test                                            # tests/cli.rs (13 CLI smoke tests, default features)
+cargo test --features "sm4-aead sm4-xts"              # same tests under feature-gated build (separate CI step)
 cargo run --example sm3_hashing                       # + hmac_and_kdf, sm2_sign_verify,
                                                       #   sm2_encrypt_decrypt, sm2_key_encoding, sm4_cbc_ctr
-cargo run --features sm4-aead --example sm4_aead      # gated: SM4-GCM
+cargo run --features sm4-aead --example sm4_aead      # gated: SM4-GCM (single-shot)
+cargo run --features sm4-aead --example sm4_ccm       # gated: SM4-CCM (12+16 / 13+8 nonce-tag shapes)
+cargo run --features sm4-aead --example sm4_streaming # gated: SM4-GCM streaming (Sm4GcmEncryptor / Decryptor)
 cargo run --features sm4-xts  --example sm4_xts       # gated: SM4-XTS
 cargo run -- tour                                     # CLI walkthrough of all primitives
 ```
 
 ## Layout
 - `src/lib.rs` — shared helpers (`encode_hex`/`decode_hex`/`sample_private_key`/
-  `sample_public_key`/`os_rng`) used by both the CLI and the examples.
+  `sample_public_key`/`os_rng`) + canonical demo fixtures as `pub const`:
+  `DEMO_SM4_KEY/IV` (CBC), `DEMO_HMAC_KEY/MSG` (RFC 4231 inputs),
+  `DEMO_PBKDF2_{PASSWORD,SALT,ITER,LEN}` (RFC 6070 inputs). CLI + examples both import these.
 - `src/main.rs` — the CLI (`hash`/`sign`/`verify`/`encrypt`/`decrypt`/`sm4-*`/
   `hmac`/`pbkdf2`/`key-info`/`tour`).
-- `examples/` — 8 self-verifying cookbook examples; CI builds and runs them all.
+- `examples/` — 10 self-verifying cookbook examples; CI builds and runs them all.
+  Default-feature: `sm3_hashing`, `hmac_and_kdf`, `sm2_sign_verify`, `sm2_encrypt_decrypt`,
+  `sm2_key_encoding`, `sm4_cbc_ctr`. Gated: `sm4_aead`, `sm4_ccm`, `sm4_streaming` (`sm4-aead`); `sm4_xts` (`sm4-xts`).
 
 ## Gotchas
 - **Keep the pin exact:** `gmcrypto-core = "=1.0.0"` — never a path/workspace/git
@@ -34,7 +41,23 @@ cargo run -- tour                                     # CLI walkthrough of all p
 - **All sample keys/IVs/passwords are public fixtures** — never production-safe.
 - **No randomness in exact-output assertions** — assert round-trips/validity, not
   exact signatures/ciphertexts.
-- **CI** runs clippy + `cargo test` + all 8 examples.
+- **Fixture safety stencil:** every fixture site (in `src/lib.rs` consts and in example
+  `let`-bindings) carries a 3-line canonical block:
+  `// DEMO ONLY: <what> / // Production: <alternative> / // Reusing this risks: <failure mode>`.
+  New fixtures should follow this shape; `grep -E 'DEMO ONLY:|Production:|Reusing this' src/ examples/`
+  should always cover every fixed key/IV/nonce/salt.
+- **§9 safety anchors:** every `examples/*.rs` `//!` header carries one line like
+  `//! Safety: §9 rule N. <Label>` pointing at `docs/using-gmcrypto-core.md` §9
+  ("Doing crypto correctly"). The guide uses bare H3 numbering (`### 1. Randomness` …
+  `### 7. Pick the right tool`) under H2 `## 9.` — NOT compound `§9.1` notation.
+  If §9 sub-rules are reordered, run `grep -n "Safety: §9" examples/` and resync.
+- **Tour feature-gated sections** use `#[cfg(feature = "...")]` blocks with `#[cfg(not(...))]`
+  skip-line fallbacks; `tests/cli.rs::tour_prints_non_flaky_section_results` wraps the
+  relevant assertions in `if cfg!(feature = "...") { … } else { … }` so the same test passes
+  under both default and `--features "sm4-aead sm4-xts"` builds.
+- **CI** runs `cargo fmt --check`, clippy with `sm4-aead sm4-xts`, `cargo test` (default),
+  `cargo test --features "sm4-aead sm4-xts"`, all 10 examples, both `check-doc-sync.sh`
+  invocations, and `gitleaks detect`.
 
 ## Claude Code specifics
 - Skills/superpowers come from your installed Claude plugins. The Codex-specific
