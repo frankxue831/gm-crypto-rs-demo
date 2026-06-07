@@ -2,6 +2,28 @@ use std::process::Command;
 
 const BIN: &str = env!("CARGO_BIN_EXE_gm-crypto-rs-demo");
 
+// ---------------------------------------------------------------------------
+// SM2 wire-format KAT vectors
+// ---------------------------------------------------------------------------
+// Captured once against the GB/T 32918.2 Appendix-A sample keypair (see
+// `SAMPLE_PRIVATE_KEY_HEX` in `src/lib.rs`). SM2 sign / encrypt are
+// randomized, so we cannot pin sig / ciphertext *output* bytes — but verify
+// and decrypt are deterministic given inputs. Pinning these inputs guards
+// the upstream wire format: any byte-level drift in DER framing, the Z-value
+// computation, the ASN.1 schema, the KDF, or the curve math will flip
+// `verify` from "valid" to "invalid" or break decrypt round-trip.
+//
+// To regenerate (only if gmcrypto-core ships a deliberate wire-format change
+// in a future major version):
+//   cargo run --quiet -- sign 'hello sdk'                       > KAT_SIG_DEFAULT
+//   cargo run --quiet -- sign 'hello sdk' --id 'alice@example' > KAT_SIG_ALICE
+//   cargo run --quiet -- encrypt 'hello sdk'                    > KAT_CIPHERTEXT
+const KAT_MESSAGE: &str = "hello sdk";
+const KAT_SIGNER_ID_ALICE: &str = "alice@example";
+const KAT_SIG_DEFAULT: &str = "3045022030215cef824e8492c4208946988106e085af40a6ad7341b3b42209c8d2fd67a0022100f8ff88484cab5394d2ad574765df1eb554119ff4e823b589c7652a9c3b68ca30";
+const KAT_SIG_ALICE: &str = "3046022100d441c15104c61745a54ced3c3753ac17e4dc97c182fc6b532d4c5c25ccffcf56022100c0e52c481ff88d394dc0c0a4e37a40a84491e105b192235eec88c245067ace81";
+const KAT_CIPHERTEXT: &str = "3073022100f78d7ede80220a946584b48cbddef94153c89b6fbaea99286864da3e0a0f0503022100f9f02ee5dfa0e638da8140669de493771ed2572bbf3c0acea9cef7b60edd419904201e32fcb97e8e3d2666bbea1c86d14e3809376c2888865e9c7359e4931bbec8b604090821dc6f499a8a1334";
+
 fn run(args: &[&str]) -> std::process::Output {
     Command::new(BIN).args(args).output().expect("run demo")
 }
@@ -271,4 +293,60 @@ fn sm4_decrypt_rejects_tampered_ciphertext() {
     assert!(!decrypted.status.success());
     let err = stderr(&decrypted);
     assert!(err.contains("SM4-CBC decryption failed"), "stderr: {err}");
+}
+
+// ---------------------------------------------------------------------------
+// SM2 wire-format KAT (Known-Answer Test) suite
+// ---------------------------------------------------------------------------
+// Vectors live at the top of this file; rationale + regeneration steps are
+// documented there. Each test feeds a pinned byte string into the
+// deterministic side of an SM2 primitive (verify or decrypt) under the
+// sample keypair and asserts the SDK still accepts / recovers it.
+
+#[test]
+fn sm2_verify_accepts_pinned_kat_signature_default_id() {
+    let output = run(&["verify", KAT_MESSAGE, KAT_SIG_DEFAULT]);
+    assert!(
+        output.status.success(),
+        "pinned KAT signature must verify -- if this fails, upstream wire \
+         format or Z-value computation changed. stderr: {}",
+        stderr(&output)
+    );
+    assert_eq!(stdout(&output), "valid\n");
+}
+
+#[test]
+fn sm2_verify_accepts_pinned_kat_signature_custom_id() {
+    let output = run(&[
+        "verify",
+        KAT_MESSAGE,
+        KAT_SIG_ALICE,
+        "--id",
+        KAT_SIGNER_ID_ALICE,
+    ]);
+    assert!(
+        output.status.success(),
+        "pinned KAT signature with custom signer-id must verify -- if this \
+         fails, the Z-value computation drifted on non-default IDs. \
+         stderr: {}",
+        stderr(&output)
+    );
+    assert_eq!(stdout(&output), "valid\n");
+}
+
+#[test]
+fn sm2_decrypt_recovers_pinned_kat_ciphertext() {
+    let output = run(&["decrypt", KAT_CIPHERTEXT]);
+    assert!(
+        output.status.success(),
+        "pinned KAT ciphertext must decrypt -- if this fails, the SM2 \
+         ASN.1 schema, the KDF, or the C1||C3||C2 framing changed. \
+         stderr: {}",
+        stderr(&output)
+    );
+    assert_eq!(
+        stdout(&output),
+        format!("{KAT_MESSAGE}\n"),
+        "decrypted plaintext does not match the pinned message"
+    );
 }
