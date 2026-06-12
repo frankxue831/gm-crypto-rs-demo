@@ -24,7 +24,7 @@ Do not run the deprecated `superpowers-codex bootstrap` command.
 - Language: Rust 2021.
 - Minimum supported Rust version: `1.85`, as declared in `Cargo.toml`.
 - Package manager and build tool: Cargo.
-- Primary dependency: published `gmcrypto-core = "=1.0.0"` from crates.io.
+- Primary dependency: published `gmcrypto-core = "=1.4.0"` from crates.io.
 - RNG dependencies: `getrandom` with `sys_rng`, plus `rand_core`.
 - Test surface: Rust unit/integration tests and CLI smoke tests under `tests/`.
 - CI baseline: GitHub Actions (Rust toolchain `1.85`) runs `cargo clippy -D warnings`,
@@ -35,7 +35,7 @@ Do not run the deprecated `superpowers-codex bootstrap` command.
 
 - Preserve downstream isolation: this repository must exercise the published
   crates.io package exactly as an external user would consume it.
-- Do not replace `gmcrypto-core = "=1.0.0"` with a path dependency, workspace
+- Do not replace `gmcrypto-core = "=1.4.0"` with a path dependency, workspace
   dependency, git dependency, or unpublished local checkout.
 - Keep demo code small and direct. Prefer explicit SDK calls over helper
   frameworks, hidden setup, or abstraction layers that obscure the API surface.
