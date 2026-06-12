@@ -100,9 +100,7 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 | `sm2_key_exchange` | 带密钥确认的 SM2 密钥交换 | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
 | `sm4_xts` | SM4-XTS 扇区加密 | `cargo run --features sm4-xts --example sm4_xts` |
 
-五个示例由特性开关控制:`sm4_aead`、`sm4_ccm`、`sm4_streaming` 由 `sm4-aead`
-控制;`sm2_key_exchange` 由 `sm2-key-exchange` 控制;`sm4_xts` 由 `sm4-xts`
-控制。默认构建运行其余六个。
+上表中运行命令带 `--features …` 的示例即由对应特性开关控制;默认构建运行其余示例。
 
 <a id="capability-map"></a>
 ## 能力速查表

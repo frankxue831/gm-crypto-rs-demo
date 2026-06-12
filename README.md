@@ -123,9 +123,8 @@ test (CI runs all of them):
 | `sm2_key_exchange` | SM2 key exchange with key confirmation | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
 | `sm4_xts` | SM4-XTS sector encryption | `cargo run --features sm4-xts --example sm4_xts` |
 
-Five examples are feature-gated: `sm4_aead`, `sm4_ccm`, and `sm4_streaming`
-behind `sm4-aead`; `sm2_key_exchange` behind `sm2-key-exchange`; and `sm4_xts`
-behind `sm4-xts`. The default build runs the other six.
+Examples whose run command above carries `--features …` are gated behind that
+feature; the default build runs the rest.
 
 ## Guide
 

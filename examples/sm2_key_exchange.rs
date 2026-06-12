@@ -31,7 +31,9 @@ fn generate_private_key() -> Sm2PrivateKey {
         let mut candidate = [0u8; 32];
         rng.try_fill_bytes(&mut candidate)
             .expect("OS RNG must be available");
-        if let Some(key) = Sm2PrivateKey::from_bytes_be(&candidate).into() {
+        // from_bytes_be returns a constant-time CtOption; convert to a
+        // plain Option so we can branch on it.
+        if let Some(key) = Option::from(Sm2PrivateKey::from_bytes_be(&candidate)) {
             return key;
         }
     }

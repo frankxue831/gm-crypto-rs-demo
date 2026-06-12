@@ -12,9 +12,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.85
         with:
           components: clippy
-      - run: cargo clippy --all-targets --features "sm4-aead sm4-xts sm2-key-exchange" -- -D warnings
+      - run: cargo clippy --all-targets --all-features -- -D warnings
       - run: cargo test
-      - run: cargo test --features "sm4-aead sm4-xts sm2-key-exchange"
+      - run: cargo test --all-features
       - name: Run default-feature examples
         run: |
           for ex in sm3_hashing hmac_and_kdf sm2_sign_verify sm2_encrypt_decrypt sm2_key_encoding sm4_cbc_ctr; do
