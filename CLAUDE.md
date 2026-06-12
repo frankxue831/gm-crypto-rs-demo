@@ -34,7 +34,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
   `sm2_key_encoding`, `sm4_cbc_ctr`. Gated: `sm4_aead`, `sm4_ccm`, `sm4_streaming` (`sm4-aead`); `sm4_xts` (`sm4-xts`).
 
 ## Gotchas
-- **Keep the pin exact:** `gmcrypto-core = "=1.0.0"` — never a path/workspace/git
+- **Keep the pin exact:** `gmcrypto-core = "=1.4.0"` — never a path/workspace/git
   dep (it would defeat the published-crate smoke test).
 - **Gated examples** `sm4_aead`/`sm4_xts` need `--features sm4-aead`/`sm4-xts`; the
   default build stays lean (no `gmcrypto-simd`). Lint with those features to cover them.
