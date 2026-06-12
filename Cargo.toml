@@ -14,8 +14,13 @@ gmcrypto-core = "=1.4.0"
 rand_core = "0.10.1"
 
 [features]
+sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]
 sm4-aead = ["gmcrypto-core/sm4-aead"]
 sm4-xts = ["gmcrypto-core/sm4-xts"]
+
+[[example]]
+name = "sm2_key_exchange"
+required-features = ["sm2-key-exchange"]
 
 [[example]]
 name = "sm4_aead"

@@ -10,7 +10,7 @@ use gmcrypto_core::sm2::{Sm2PrivateKey, Sm2PublicKey};
 /// Fixed, public GB/T 32918.2 sample private key scalar (big-endian hex).
 ///
 // DEMO ONLY: GB/T 32918.2 Appendix-A sample scalar — known to every reader of the spec.
-// Production: generate via `Sm2PrivateKey::generate(&mut os_rng())` and persist out-of-band (PEM/PKCS#8 in a vault).
+// Production: draw 32 random bytes from `os_rng()` and retry `Sm2PrivateKey::from_bytes_be` (see examples/sm2_key_exchange.rs); persist out-of-band (PEM/PKCS#8 in a vault).
 // Reusing this key risks: anyone can forge signatures and decrypt every ciphertext produced with it.
 pub const SAMPLE_PRIVATE_KEY_HEX: &str =
     "3945208F7B2144B13F36E38AC6D39F95889393692860B51A42FB81EF4DF7C5B8";
