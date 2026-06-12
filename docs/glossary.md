@@ -14,7 +14,9 @@ API names, crate names, commands, filenames, feature flags, error messages, and 
 | ciphertext / plaintext | 密文 / 明文 | |
 | key | 密钥 | |
 | public key / private key | 公钥 / 私钥 | |
-| key agreement | 密钥协商 | |
+| key agreement | 密钥协商 | generic term; for the SM2 protocol see "key exchange" |
+| key exchange | 密钥交换 | the GM/T 0003.3 (≡ GB/T 32918.3) SM2 protocol, per the standard's own naming |
+| key confirmation | 密钥确认 | the `S_A` / `S_B` tag-verification step in SM2 key exchange |
 | key derivation | 密钥派生 | |
 | key encapsulation | 密钥封装 | |
 | MAC | MAC | acronym kept English |

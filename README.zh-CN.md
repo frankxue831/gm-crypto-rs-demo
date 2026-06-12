@@ -95,9 +95,14 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 | `sm2_key_encoding` | PKCS#8 / SEC1 / SPKI / PEM 与加密 PKCS#8 | `cargo run --example sm2_key_encoding` |
 | `sm4_cbc_ctr` | SM4 CBC + CTR 与原始分组 | `cargo run --example sm4_cbc_ctr` |
 | `sm4_aead` | SM4-GCM 认证加密 | `cargo run --features sm4-aead --example sm4_aead` |
+| `sm4_ccm` | SM4-CCM 的两种 nonce/标签形态(12+16、13+8) | `cargo run --features sm4-aead --example sm4_ccm` |
+| `sm4_streaming` | SM4-GCM 流式加解密(分块处理) | `cargo run --features sm4-aead --example sm4_streaming` |
+| `sm2_key_exchange` | 带密钥确认的 SM2 密钥交换 | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
 | `sm4_xts` | SM4-XTS 扇区加密 | `cargo run --features sm4-xts --example sm4_xts` |
 
-`sm4_aead` 与 `sm4_xts` 示例分别由 `sm4-aead` / `sm4-xts` 特性开关控制。
+五个示例由特性开关控制:`sm4_aead`、`sm4_ccm`、`sm4_streaming` 由 `sm4-aead`
+控制;`sm2_key_exchange` 由 `sm2-key-exchange` 控制;`sm4_xts` 由 `sm4-xts`
+控制。默认构建运行其余六个。
 
 <a id="capability-map"></a>
 ## 能力速查表
@@ -114,6 +119,9 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 | SM2 密钥编码(PKCS#8 / SEC1 / SPKI / PEM) | `cargo run -- key-info` | `examples/sm2_key_encoding.rs` | `§5` |
 | SM4-CBC / CTR 对称加密 | `cargo run -- sm4-encrypt` / `sm4-decrypt` | `examples/sm4_cbc_ctr.rs` | `§6` |
 | SM4-GCM 认证加密(AEAD) | — | `examples/sm4_aead.rs`(特性 `sm4-aead`) | `§7` |
+| SM4-CCM 认证加密(受限场景 AEAD) | — | `examples/sm4_ccm.rs`(特性 `sm4-aead`) | `§7` |
+| SM4-GCM 流式加解密(分块 AEAD) | — | `examples/sm4_streaming.rs`(特性 `sm4-aead`) | `§7` |
+| SM2 密钥交换(GB/T 32918.3) | — | `examples/sm2_key_exchange.rs`(特性 `sm2-key-exchange`) | — |
 | SM4-XTS 扇区/磁盘加密 | — | `examples/sm4_xts.rs`(特性 `sm4-xts`) | `§8` |
 | 横切正确性检查清单 | — | — | `§9` |
 | 覆盖所有原语的端到端巡览 | `cargo run -- tour` | — | `§0`–`§9` |
