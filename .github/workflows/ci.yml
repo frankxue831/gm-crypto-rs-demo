@@ -32,3 +32,5 @@ jobs:
         run: ./scripts/check-doc-sync.sh docs/using-gmcrypto-core.md docs/using-gmcrypto-core.zh-CN.md
       - name: Check README bilingual sync
         run: ./scripts/check-doc-sync.sh README.md README.zh-CN.md
+      - name: Check example inventory sync
+        run: ./scripts/check-example-sync.sh

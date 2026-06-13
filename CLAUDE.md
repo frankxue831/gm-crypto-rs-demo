@@ -60,7 +60,8 @@ cargo run -- tour                                     # CLI walkthrough of all p
   under both default and feature-gated (`--all-features`) builds.
 - **CI** runs `cargo fmt --check`, clippy with `--all-features`, `cargo test` (default),
   `cargo test --all-features`, all 11 examples (gated ones each under their minimal
-  feature), both `check-doc-sync.sh` invocations, and `gitleaks detect`.
+  feature), both `check-doc-sync.sh` invocations, `check-example-sync.sh` (every
+  `examples/*.rs` must appear in ci.yml + both README tables), and `gitleaks detect`.
 
 ## Claude Code specifics
 - Skills/superpowers come from your installed Claude plugins. The Codex-specific
