@@ -51,13 +51,13 @@ fn main() {
     );
 
     // ---- 2. Key block: PRF(master, "key expansion", s_rand || c_rand) ----
-    // NOTE the seed order FLIPS vs the master secret (server random first) —
-    // the SDK handles that internally; you pass (client_random, server_random)
-    // in the same argument order both times.
+    // The PRF seed flips server-first here (§6.5.2), but the SDK applies that
+    // internally — you still pass (client_random, server_random), same as above.
     //
-    // The caller carves the key block per cipher suite. For a GCM suite the
-    // layout is 2 x (0-byte MAC key + 16-byte key + 4-byte IV salt) = 40 bytes,
-    // in this fixed order: client key, server key, client IV salt, server IV salt.
+    // The caller carves the key block per cipher suite. A GCM suite has no
+    // separate MAC key (the cipher key also keys GHASH), so its block is just
+    // 2 x (16-byte key + 4-byte IV salt) = 40 bytes, in this fixed order:
+    // client key, server key, client IV salt, server IV salt.
     const KEY_LEN: usize = 16;
     const IV_SALT_LEN: usize = 4;
     let mut key_block = [0u8; 2 * (KEY_LEN + IV_SALT_LEN)];
