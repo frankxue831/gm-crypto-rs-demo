@@ -8,7 +8,7 @@ crate.
 This repository intentionally depends on the crates.io release:
 
 ```toml
-gmcrypto-core = "=1.4.0"
+gmcrypto-core = "=1.6.0"
 ```
 
 It does not use a path dependency or workspace dependency from a local
