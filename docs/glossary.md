@@ -18,6 +18,9 @@ API names, crate names, commands, filenames, feature flags, error messages, and 
 | key exchange | 密钥交换 | the GM/T 0003.3 (≡ GB/T 32918.3) SM2 protocol, per the standard's own naming |
 | key confirmation | 密钥确认 | the `S_A` / `S_B` tag-verification step in SM2 key exchange |
 | key derivation | 密钥派生 | |
+| TLCP | TLCP | the Transport Layer Cryptography Protocol (GB/T 38636-2020); acronym kept English |
+| key schedule | 密钥编排 | TLCP's PRF-based derivation of session keys from the pre-master secret |
+| master secret / pre-master secret | 主密钥 / 预主密钥 | TLCP key-schedule inputs/outputs (GB/T 38636 §6.5) |
 | key encapsulation | 密钥封装 | |
 | MAC | MAC | acronym kept English |
 | HMAC | HMAC | acronym kept English |
