@@ -40,6 +40,9 @@ Every capability this demo exposes from `gmcrypto-core`, mapped to the CLI subco
 | SM2 key encoding (PKCS#8 / SEC1 / SPKI / PEM) | `cargo run -- key-info` | `examples/sm2_key_encoding.rs` | `§5` |
 | SM4-CBC / CTR symmetric encryption | `cargo run -- sm4-encrypt` / `sm4-decrypt` | `examples/sm4_cbc_ctr.rs` | `§6` |
 | SM4-GCM authenticated encryption (AEAD) | — | `examples/sm4_aead.rs` (feature `sm4-aead`) | `§7` |
+| SM4-CCM authenticated encryption (constrained AEAD) | — | `examples/sm4_ccm.rs` (feature `sm4-aead`) | `§7` |
+| SM4-GCM streaming (chunked AEAD) | — | `examples/sm4_streaming.rs` (feature `sm4-aead`) | `§7` |
+| SM2 key exchange (GB/T 32918.3) | — | `examples/sm2_key_exchange.rs` (feature `sm2-key-exchange`) | — |
 | SM4-XTS sector / disk encryption | — | `examples/sm4_xts.rs` (feature `sm4-xts`) | `§8` |
 | Cross-cutting correctness checklist | — | — | `§9` |
 | End-to-end walkthrough of every primitive | `cargo run -- tour` | — | `§0`–`§9` |
@@ -115,10 +118,13 @@ test (CI runs all of them):
 | `sm2_key_encoding` | PKCS#8 / SEC1 / SPKI / PEM + encrypted PKCS#8 | `cargo run --example sm2_key_encoding` |
 | `sm4_cbc_ctr` | SM4 CBC + CTR + raw block | `cargo run --example sm4_cbc_ctr` |
 | `sm4_aead` | SM4-GCM authenticated encryption | `cargo run --features sm4-aead --example sm4_aead` |
+| `sm4_ccm` | SM4-CCM in two nonce/tag shapes (12+16, 13+8) | `cargo run --features sm4-aead --example sm4_ccm` |
+| `sm4_streaming` | SM4-GCM streaming (chunked encrypt/decrypt) | `cargo run --features sm4-aead --example sm4_streaming` |
+| `sm2_key_exchange` | SM2 key exchange with key confirmation | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
 | `sm4_xts` | SM4-XTS sector encryption | `cargo run --features sm4-xts --example sm4_xts` |
 
-The `sm4_aead` and `sm4_xts` examples are gated behind the `sm4-aead` / `sm4-xts`
-features respectively.
+Examples whose run command above carries `--features …` are gated behind that
+feature; the default build runs the rest.
 
 ## Guide
 

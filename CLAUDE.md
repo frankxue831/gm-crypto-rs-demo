@@ -10,14 +10,15 @@ on tooling, this file wins.
 ## Commands (from repo root)
 ```bash
 cargo fmt --check
-cargo clippy --all-targets --features "sm4-aead sm4-xts" -- -D warnings
-cargo test                                            # tests/cli.rs (13 CLI smoke tests, default features)
-cargo test --features "sm4-aead sm4-xts"              # same tests under feature-gated build (separate CI step)
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test                                            # tests/cli.rs (16 CLI smoke tests, default features)
+cargo test --all-features                             # same tests under feature-gated build (separate CI step)
 cargo run --example sm3_hashing                       # + hmac_and_kdf, sm2_sign_verify,
                                                       #   sm2_encrypt_decrypt, sm2_key_encoding, sm4_cbc_ctr
 cargo run --features sm4-aead --example sm4_aead      # gated: SM4-GCM (single-shot)
 cargo run --features sm4-aead --example sm4_ccm       # gated: SM4-CCM (12+16 / 13+8 nonce-tag shapes)
 cargo run --features sm4-aead --example sm4_streaming # gated: SM4-GCM streaming (Sm4GcmEncryptor / Decryptor)
+cargo run --features sm2-key-exchange --example sm2_key_exchange  # gated: SM2 KX (GM/T 0003.3, key confirmation)
 cargo run --features sm4-xts  --example sm4_xts       # gated: SM4-XTS
 cargo run -- tour                                     # CLI walkthrough of all primitives
 ```
@@ -29,15 +30,17 @@ cargo run -- tour                                     # CLI walkthrough of all p
   `DEMO_PBKDF2_{PASSWORD,SALT,ITER,LEN}` (RFC 6070 inputs). CLI + examples both import these.
 - `src/main.rs` — the CLI (`hash`/`sign`/`verify`/`encrypt`/`decrypt`/`sm4-*`/
   `hmac`/`pbkdf2`/`key-info`/`tour`).
-- `examples/` — 10 self-verifying cookbook examples; CI builds and runs them all.
+- `examples/` — 11 self-verifying cookbook examples; CI builds and runs them all.
   Default-feature: `sm3_hashing`, `hmac_and_kdf`, `sm2_sign_verify`, `sm2_encrypt_decrypt`,
-  `sm2_key_encoding`, `sm4_cbc_ctr`. Gated: `sm4_aead`, `sm4_ccm`, `sm4_streaming` (`sm4-aead`); `sm4_xts` (`sm4-xts`).
+  `sm2_key_encoding`, `sm4_cbc_ctr`. Gated: `sm4_aead`, `sm4_ccm`, `sm4_streaming` (`sm4-aead`);
+  `sm2_key_exchange` (`sm2-key-exchange`); `sm4_xts` (`sm4-xts`).
 
 ## Gotchas
 - **Keep the pin exact:** `gmcrypto-core = "=1.4.0"` — never a path/workspace/git
   dep (it would defeat the published-crate smoke test).
-- **Gated examples** `sm4_aead`/`sm4_xts` need `--features sm4-aead`/`sm4-xts`; the
-  default build stays lean (no `gmcrypto-simd`). Lint with those features to cover them.
+- **Gated examples** need their feature flag (`sm4-aead` for `sm4_aead`/`sm4_ccm`/`sm4_streaming`,
+  `sm2-key-exchange` for `sm2_key_exchange`, `sm4-xts` for `sm4_xts`); the default
+  build stays lean (no `gmcrypto-simd`). Lint with `--all-features` to cover them.
 - **All sample keys/IVs/passwords are public fixtures** — never production-safe.
 - **No randomness in exact-output assertions** — assert round-trips/validity, not
   exact signatures/ciphertexts.
@@ -54,10 +57,11 @@ cargo run -- tour                                     # CLI walkthrough of all p
 - **Tour feature-gated sections** use `#[cfg(feature = "...")]` blocks with `#[cfg(not(...))]`
   skip-line fallbacks; `tests/cli.rs::tour_prints_non_flaky_section_results` wraps the
   relevant assertions in `if cfg!(feature = "...") { … } else { … }` so the same test passes
-  under both default and `--features "sm4-aead sm4-xts"` builds.
-- **CI** runs `cargo fmt --check`, clippy with `sm4-aead sm4-xts`, `cargo test` (default),
-  `cargo test --features "sm4-aead sm4-xts"`, all 10 examples, both `check-doc-sync.sh`
-  invocations, and `gitleaks detect`.
+  under both default and feature-gated (`--all-features`) builds.
+- **CI** runs `cargo fmt --check`, clippy with `--all-features`, `cargo test` (default),
+  `cargo test --all-features`, all 11 examples (gated ones each under their minimal
+  feature), both `check-doc-sync.sh` invocations, `check-example-sync.sh` (every
+  `examples/*.rs` must appear in ci.yml, both READMEs, and CLAUDE.md), and `gitleaks detect`.
 
 ## Claude Code specifics
 - Skills/superpowers come from your installed Claude plugins. The Codex-specific
