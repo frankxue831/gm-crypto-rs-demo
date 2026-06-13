@@ -36,7 +36,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
   `sm2_key_exchange` (`sm2-key-exchange`); `sm4_xts` (`sm4-xts`).
 
 ## Gotchas
-- **Keep the pin exact:** `gmcrypto-core = "=1.4.0"` — never a path/workspace/git
+- **Keep the pin exact:** `gmcrypto-core = "=1.6.0"` — never a path/workspace/git
   dep (it would defeat the published-crate smoke test).
 - **Gated examples** need their feature flag (`sm4-aead` for `sm4_aead`/`sm4_ccm`/`sm4_streaming`,
   `sm2-key-exchange` for `sm2_key_exchange`, `sm4-xts` for `sm4_xts`); the default
