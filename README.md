@@ -42,7 +42,8 @@ Every capability this demo exposes from `gmcrypto-core`, mapped to the CLI subco
 | SM4-GCM authenticated encryption (AEAD) | — | `examples/sm4_aead.rs` (feature `sm4-aead`) | `§7` |
 | SM4-CCM authenticated encryption (constrained AEAD) | — | `examples/sm4_ccm.rs` (feature `sm4-aead`) | `§7` |
 | SM4-GCM streaming (chunked AEAD) | — | `examples/sm4_streaming.rs` (feature `sm4-aead`) | `§7` |
-| SM2 key exchange (GB/T 32918.3) | — | `examples/sm2_key_exchange.rs` (feature `sm2-key-exchange`) | — |
+| SM2 key exchange (GB/T 32918.3, confirmed + no-confirmation) | — | `examples/sm2_key_exchange.rs` (feature `sm2-key-exchange`) | — |
+| TLCP key schedule (GB/T 38636 PRF) | — | `examples/tlcp_key_schedule.rs` (feature `tlcp`) | — |
 | SM4-XTS sector / disk encryption | — | `examples/sm4_xts.rs` (feature `sm4-xts`) | `§8` |
 | Cross-cutting correctness checklist | — | — | `§9` |
 | End-to-end walkthrough of every primitive | `cargo run -- tour` | — | `§0`–`§9` |
@@ -120,7 +121,8 @@ test (CI runs all of them):
 | `sm4_aead` | SM4-GCM authenticated encryption | `cargo run --features sm4-aead --example sm4_aead` |
 | `sm4_ccm` | SM4-CCM in two nonce/tag shapes (12+16, 13+8) | `cargo run --features sm4-aead --example sm4_ccm` |
 | `sm4_streaming` | SM4-GCM streaming (chunked encrypt/decrypt) | `cargo run --features sm4-aead --example sm4_streaming` |
-| `sm2_key_exchange` | SM2 key exchange with key confirmation | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
+| `sm2_key_exchange` | SM2 key exchange — confirmed + no-confirmation (TLCP) variants | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
+| `tlcp_key_schedule` | TLCP PRF: master secret, key block, Finished `verify_data` | `cargo run --features tlcp --example tlcp_key_schedule` |
 | `sm4_xts` | SM4-XTS sector encryption | `cargo run --features sm4-xts --example sm4_xts` |
 
 Examples whose run command above carries `--features …` are gated behind that

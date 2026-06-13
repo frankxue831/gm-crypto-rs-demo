@@ -97,7 +97,8 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 | `sm4_aead` | SM4-GCM 认证加密 | `cargo run --features sm4-aead --example sm4_aead` |
 | `sm4_ccm` | SM4-CCM 的两种 nonce/标签形态(12+16、13+8) | `cargo run --features sm4-aead --example sm4_ccm` |
 | `sm4_streaming` | SM4-GCM 流式加解密(分块处理) | `cargo run --features sm4-aead --example sm4_streaming` |
-| `sm2_key_exchange` | 带密钥确认的 SM2 密钥交换 | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
+| `sm2_key_exchange` | SM2 密钥交换 —— 带确认与免确认(TLCP)两种形态 | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
+| `tlcp_key_schedule` | TLCP PRF:主密钥、密钥块、Finished `verify_data` | `cargo run --features tlcp --example tlcp_key_schedule` |
 | `sm4_xts` | SM4-XTS 扇区加密 | `cargo run --features sm4-xts --example sm4_xts` |
 
 上表中运行命令带 `--features …` 的示例即由对应特性开关控制;默认构建运行其余示例。
@@ -119,7 +120,8 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 | SM4-GCM 认证加密(AEAD) | — | `examples/sm4_aead.rs`(特性 `sm4-aead`) | `§7` |
 | SM4-CCM 认证加密(受限场景 AEAD) | — | `examples/sm4_ccm.rs`(特性 `sm4-aead`) | `§7` |
 | SM4-GCM 流式加解密(分块 AEAD) | — | `examples/sm4_streaming.rs`(特性 `sm4-aead`) | `§7` |
-| SM2 密钥交换(GB/T 32918.3) | — | `examples/sm2_key_exchange.rs`(特性 `sm2-key-exchange`) | — |
+| SM2 密钥交换(GB/T 32918.3,带确认 + 免确认) | — | `examples/sm2_key_exchange.rs`(特性 `sm2-key-exchange`) | — |
+| TLCP 密钥编排(GB/T 38636 PRF) | — | `examples/tlcp_key_schedule.rs`(特性 `tlcp`) | — |
 | SM4-XTS 扇区/磁盘加密 | — | `examples/sm4_xts.rs`(特性 `sm4-xts`) | `§8` |
 | 横切正确性检查清单 | — | — | `§9` |
 | 覆盖所有原语的端到端巡览 | `cargo run -- tour` | — | `§0`–`§9` |

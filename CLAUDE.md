@@ -18,7 +18,8 @@ cargo run --example sm3_hashing                       # + hmac_and_kdf, sm2_sign
 cargo run --features sm4-aead --example sm4_aead      # gated: SM4-GCM (single-shot)
 cargo run --features sm4-aead --example sm4_ccm       # gated: SM4-CCM (12+16 / 13+8 nonce-tag shapes)
 cargo run --features sm4-aead --example sm4_streaming # gated: SM4-GCM streaming (Sm4GcmEncryptor / Decryptor)
-cargo run --features sm2-key-exchange --example sm2_key_exchange  # gated: SM2 KX (GM/T 0003.3, key confirmation)
+cargo run --features sm2-key-exchange --example sm2_key_exchange  # gated: SM2 KX (GM/T 0003.3; confirmed + no-confirmation)
+cargo run --features tlcp --example tlcp_key_schedule # gated: TLCP key schedule (GB/T 38636 PRF over HMAC-SM3)
 cargo run --features sm4-xts  --example sm4_xts       # gated: SM4-XTS
 cargo run -- tour                                     # CLI walkthrough of all primitives
 ```
@@ -30,17 +31,17 @@ cargo run -- tour                                     # CLI walkthrough of all p
   `DEMO_PBKDF2_{PASSWORD,SALT,ITER,LEN}` (RFC 6070 inputs). CLI + examples both import these.
 - `src/main.rs` — the CLI (`hash`/`sign`/`verify`/`encrypt`/`decrypt`/`sm4-*`/
   `hmac`/`pbkdf2`/`key-info`/`tour`).
-- `examples/` — 11 self-verifying cookbook examples; CI builds and runs them all.
+- `examples/` — 12 self-verifying cookbook examples; CI builds and runs them all.
   Default-feature: `sm3_hashing`, `hmac_and_kdf`, `sm2_sign_verify`, `sm2_encrypt_decrypt`,
   `sm2_key_encoding`, `sm4_cbc_ctr`. Gated: `sm4_aead`, `sm4_ccm`, `sm4_streaming` (`sm4-aead`);
-  `sm2_key_exchange` (`sm2-key-exchange`); `sm4_xts` (`sm4-xts`).
+  `sm2_key_exchange` (`sm2-key-exchange`); `tlcp_key_schedule` (`tlcp`); `sm4_xts` (`sm4-xts`).
 
 ## Gotchas
 - **Keep the pin exact:** `gmcrypto-core = "=1.6.0"` — never a path/workspace/git
   dep (it would defeat the published-crate smoke test).
 - **Gated examples** need their feature flag (`sm4-aead` for `sm4_aead`/`sm4_ccm`/`sm4_streaming`,
-  `sm2-key-exchange` for `sm2_key_exchange`, `sm4-xts` for `sm4_xts`); the default
-  build stays lean (no `gmcrypto-simd`). Lint with `--all-features` to cover them.
+  `sm2-key-exchange` for `sm2_key_exchange`, `tlcp` for `tlcp_key_schedule`, `sm4-xts` for
+  `sm4_xts`); the default build stays lean (no `gmcrypto-simd`). Lint with `--all-features` to cover them.
 - **All sample keys/IVs/passwords are public fixtures** — never production-safe.
 - **No randomness in exact-output assertions** — assert round-trips/validity, not
   exact signatures/ciphertexts.
@@ -59,7 +60,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
   relevant assertions in `if cfg!(feature = "...") { … } else { … }` so the same test passes
   under both default and feature-gated (`--all-features`) builds.
 - **CI** runs `cargo fmt --check`, clippy with `--all-features`, `cargo test` (default),
-  `cargo test --all-features`, all 11 examples (gated ones each under their minimal
+  `cargo test --all-features`, all 12 examples (gated ones each under their minimal
   feature), both `check-doc-sync.sh` invocations, `check-example-sync.sh` (every
   `examples/*.rs` must appear in ci.yml, both READMEs, and CLAUDE.md), and `gitleaks detect`.
 

@@ -29,7 +29,7 @@ Do not run the deprecated `superpowers-codex bootstrap` command.
 - Test surface: Rust unit/integration tests and CLI smoke tests under `tests/`.
 - CI baseline: GitHub Actions (Rust toolchain `1.85`) runs `cargo clippy -D warnings`,
   `cargo test`, and every example — the default set plus the `sm4-aead` /
-  `sm2-key-exchange` / `sm4-xts` gated ones.
+  `sm2-key-exchange` / `tlcp` / `sm4-xts` gated ones.
 
 ## Architectural Principles
 

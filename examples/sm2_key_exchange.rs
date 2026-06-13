@@ -123,5 +123,35 @@ fn main() {
     );
     println!("off-curve peer point is rejected (invalid-curve defense)");
 
+    // ---- No-confirmation variant (TLCP ECDHE suites) ----
+    // GB/T 32918.3 makes the S_A / S_B confirmation tags optional. TLCP's
+    // ECDHE suites omit them and confirm the key via the Finished messages
+    // instead, so the SDK offers completers that derive K directly:
+    // the responder's `respond_without_key_confirmation` emits R_B and the key
+    // with no tag and no waiting state; the initiator's
+    // `derive_without_key_confirmation` takes R_B and returns the key.
+    //
+    // ⚠ The peer has proven nothing when these return: a key mismatch (or an
+    // active attacker) surfaces only once the surrounding protocol confirms
+    // the key. Prefer the confirmed flow above unless your protocol supplies
+    // confirmation of its own.
+    let init = Sm2KxInitiator::new(&d_a, &p_b, ID_A, ID_B, KLEN).expect("valid KX parameters");
+    let (r_a, init_waiting) = init.produce_ephemeral(&mut rng).expect("sample r_A");
+    let resp = Sm2KxResponder::new(&d_b, &p_a, ID_A, ID_B, KLEN).expect("valid KX parameters");
+    let (r_b, key_b_noconf) = resp
+        .respond_without_key_confirmation(&r_a, &mut rng)
+        .expect("derive K without confirmation");
+    let key_a_noconf = init_waiting
+        .derive_without_key_confirmation(&r_b)
+        .expect("derive K without confirmation");
+    assert_eq!(
+        key_a_noconf.as_bytes(),
+        key_b_noconf.as_bytes(),
+        "both sides must agree even without the confirmation tags"
+    );
+    println!(
+        "no-confirmation variant: both sides agree on a {KLEN}-byte key (TLCP confirms via Finished)"
+    );
+
     println!("\nOK");
 }
