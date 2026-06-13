@@ -99,12 +99,14 @@ getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = fals
 rand_core = "0.10.1"
 ```
 
-可选 feature 用于开启受门控的 SM4 模式(默认构建保持精简):
+可选 feature 用于开启受门控的能力(默认构建保持精简):
 
 ```toml
 [features]
-sm4-aead = ["gmcrypto-core/sm4-aead"]   # SM4-GCM / SM4-CCM
-sm4-xts  = ["gmcrypto-core/sm4-xts"]     # SM4-XTS
+sm4-aead         = ["gmcrypto-core/sm4-aead"]          # SM4-GCM / SM4-CCM  (guide §7)
+sm4-xts          = ["gmcrypto-core/sm4-xts"]           # SM4-XTS            (guide §8)
+sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]  # SM2 key exchange   (README cookbook)
+tlcp             = ["gmcrypto-core/tlcp"]              # TLCP key schedule  (README cookbook)
 ```
 
 <a id="get-randomness-right"></a>
