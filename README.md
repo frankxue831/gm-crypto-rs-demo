@@ -44,6 +44,7 @@ Every capability this demo exposes from `gmcrypto-core`, mapped to the CLI subco
 | SM4-GCM streaming (chunked AEAD) | — | `examples/sm4_streaming.rs` (feature `sm4-aead`) | `§7` |
 | SM2 key exchange (GB/T 32918.3, confirmed + no-confirmation) | — | `examples/sm2_key_exchange.rs` (feature `sm2-key-exchange`) | — |
 | TLCP key schedule (GB/T 38636 PRF) | — | `examples/tlcp_key_schedule.rs` (feature `tlcp`) | — |
+| TLCP record protection (GB/T 38636 §6.3) | — | `examples/tlcp_record.rs` (feature `tlcp`) | — |
 | SM4-XTS sector / disk encryption | — | `examples/sm4_xts.rs` (feature `sm4-xts`) | `§8` |
 | Cross-cutting correctness checklist | — | — | `§9` |
 | End-to-end walkthrough of every primitive | `cargo run -- tour` | — | `§0`–`§9` |
@@ -123,6 +124,7 @@ test (CI runs all of them):
 | `sm4_streaming` | SM4-GCM streaming (chunked encrypt/decrypt) | `cargo run --features sm4-aead --example sm4_streaming` |
 | `sm2_key_exchange` | SM2 key exchange — confirmed + no-confirmation (TLCP) variants | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
 | `tlcp_key_schedule` | TLCP PRF: master secret, key block, Finished `verify_data` | `cargo run --features tlcp --example tlcp_key_schedule` |
+| `tlcp_record` | TLCP record protect/deprotect: SM4-CBC (+ GCM) round-trip & rejection | `cargo run --features tlcp --example tlcp_record` |
 | `sm4_xts` | SM4-XTS sector encryption | `cargo run --features sm4-xts --example sm4_xts` |
 
 Examples whose run command above carries `--features …` are gated behind that

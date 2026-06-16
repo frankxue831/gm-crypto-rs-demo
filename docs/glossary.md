@@ -21,6 +21,7 @@ API names, crate names, commands, filenames, feature flags, error messages, and 
 | TLCP | TLCP | the Transport Layer Cryptography Protocol (GB/T 38636-2020); acronym kept English |
 | key schedule | 密钥编排 | TLCP's PRF-based derivation of session keys from the pre-master secret |
 | master secret / pre-master secret | 主密钥 / 预主密钥 | TLCP key-schedule inputs/outputs (GB/T 38636 §6.5) |
+| record protection | 记录层保护 | TLCP's per-record protect/deprotect (GB/T 38636 §6.3): MAC-then-encrypt SM4-CBC or SM4-GCM, with `seq` / `type` / `version` bound into the MAC/AAD |
 | key encapsulation | 密钥封装 | |
 | MAC | MAC | acronym kept English |
 | HMAC | HMAC | acronym kept English |

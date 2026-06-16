@@ -28,6 +28,10 @@ name = "tlcp_key_schedule"
 required-features = ["tlcp"]
 
 [[example]]
+name = "tlcp_record"
+required-features = ["tlcp"]
+
+[[example]]
 name = "sm4_aead"
 required-features = ["sm4-aead"]
 
