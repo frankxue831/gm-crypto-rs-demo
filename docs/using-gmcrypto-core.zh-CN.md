@@ -118,16 +118,16 @@ tlcp             = ["gmcrypto-core/tlcp"]              # TLCP key schedule  (REA
 ### 正确使用随机性
 
 SM2 的签名和加密都需要密码学安全的 RNG,而操作系统的 CSPRNG 正是合适的
-来源。`getrandom::SysRng` 实现的是*可失败*的 `TryRngCore`;SM2 的 API 需要
-*不可失败*的 `RngCore`,因此用 `UnwrapErr` 适配一次即可:
+来源。`getrandom::SysRng` 实现的是*可失败*的 `TryRngCore`,并且已标记为
+`CryptoRng`,因此可直接满足 SDK 的 `TryCryptoRng` 约束 —— 自 1.0 起不再需要
+`UnwrapErr` 适配器:
 
 ```rust
 use getrandom::SysRng;
-use rand_core::UnwrapErr;
 
-/// OS CSPRNG, adapted to the infallible RngCore the SDK expects.
-pub fn os_rng() -> UnwrapErr<SysRng> {
-    UnwrapErr(SysRng)
+/// The OS CSPRNG, exposed for the SDK's `TryCryptoRng` bound (gmcrypto-core 1.0+).
+pub fn os_rng() -> SysRng {
+    SysRng
 }
 ```
 
@@ -138,15 +138,15 @@ pub fn os_rng() -> UnwrapErr<SysRng> {
 <a id="load-the-sample-key"></a>
 ### 加载示例密钥
 
-本指南重复使用一把固定的 GB/T 32918.2 示例私钥。在 0.16 版本中,推荐的
-构造函数是 `from_bytes_be`,接受 32 字节大端标量:
+本指南重复使用一把固定的 GB/T 32918.2 示例私钥。推荐的构造函数是
+`from_bytes_be`,接受 32 字节大端标量;对应的公钥直接从私钥取得:
 
 ```rust
-use gmcrypto_core::sm2::{Sm2PrivateKey, Sm2PublicKey};
+use gmcrypto_core::sm2::Sm2PrivateKey;
 
 let bytes: [u8; 32] = /* decode "3945208F...4DF7C5B8" */;
 let key = Sm2PrivateKey::from_bytes_be(&bytes).expect("valid scalar");
-let public = Sm2PublicKey::from_point(key.public_key());
+let public = key.public_key();
 ```
 
 > ⚠️ 这个标量是一份**公开的**标准样例。任何真实用途都请自行生成私钥。
@@ -529,8 +529,8 @@ let pt = mode_xts::decrypt(&key32, &tweak, &ct).expect("xts");
 <a id="1-randomness"></a>
 ### 1. 随机性
 
-密钥、nonce、IV、盐值始终从操作系统的 CSPRNG 取得。在本 SDK 中,这就是用
-`rand_core::UnwrapErr` 包装的 `getrandom::SysRng`
+密钥、nonce、IV、盐值始终从操作系统的 CSPRNG 取得。在本 SDK 中,这就是直接
+使用的 `getrandom::SysRng`
 ([§0](#0-getting-started-setup-rng-and-helpers))。绝不能用常量,也不能用低熵种子。
 
 <a id="2-uniqueness-of-nonces--ivs--counters"></a>
