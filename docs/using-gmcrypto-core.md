@@ -115,16 +115,16 @@ tlcp             = ["gmcrypto-core/tlcp"]              # TLCP key schedule  (REA
 ### Get randomness right
 
 SM2 signing and encryption need a cryptographically secure RNG, and the OS CSPRNG
-is the right source. `getrandom::SysRng` implements the *fallible* `TryRngCore`;
-the SM2 APIs want an *infallible* `RngCore`, so adapt it once with `UnwrapErr`:
+is the right source. `getrandom::SysRng` implements the *fallible* `TryRngCore`
+and is marked `CryptoRng`, so it satisfies the SDK's `TryCryptoRng` bound
+directly — since 1.0 no `UnwrapErr` adapter is needed:
 
 ```rust
 use getrandom::SysRng;
-use rand_core::UnwrapErr;
 
-/// OS CSPRNG, adapted to the infallible RngCore the SDK expects.
-pub fn os_rng() -> UnwrapErr<SysRng> {
-    UnwrapErr(SysRng)
+/// The OS CSPRNG, exposed for the SDK's `TryCryptoRng` bound (gmcrypto-core 1.0+).
+pub fn os_rng() -> SysRng {
+    SysRng
 }
 ```
 
@@ -135,15 +135,16 @@ pub fn os_rng() -> UnwrapErr<SysRng> {
 
 ### Load the sample key
 
-The guide reuses one fixed GB/T 32918.2 sample private key. In 0.16 the
-recommended constructor is `from_bytes_be` over a 32-byte big-endian scalar:
+The guide reuses one fixed GB/T 32918.2 sample private key. The recommended
+constructor is `from_bytes_be` over a 32-byte big-endian scalar, and the matching
+public key comes straight off the private key:
 
 ```rust
-use gmcrypto_core::sm2::{Sm2PrivateKey, Sm2PublicKey};
+use gmcrypto_core::sm2::Sm2PrivateKey;
 
 let bytes: [u8; 32] = /* decode "3945208F...4DF7C5B8" */;
 let key = Sm2PrivateKey::from_bytes_be(&bytes).expect("valid scalar");
-let public = Sm2PublicKey::from_point(key.public_key());
+let public = key.public_key();
 ```
 
 > ⚠️ This scalar is a **public** standards fixture. Generate your own private key
@@ -514,7 +515,7 @@ guide, remember these.
 ### 1. Randomness
 
 Always source keys, nonces, IVs, and salts from the OS CSPRNG. In this SDK that's
-`getrandom::SysRng` wrapped in `rand_core::UnwrapErr`
+`getrandom::SysRng`, used directly
 ([§0](#0-getting-started-setup-rng-and-helpers)). Never a constant, never a
 low-entropy seed.
 
