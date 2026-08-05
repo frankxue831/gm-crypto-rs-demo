@@ -9,11 +9,17 @@ repository = "https://github.com/frankxue831/gm-crypto-rs-demo"
 publish = false
 
 [dependencies]
+# `aead-traits` needs this companion crate: gmcrypto-core does not re-export
+# `aead`, so a downstream user names it themselves. `alloc` is load-bearing (the
+# Vec-returning `Aead` and `Buffer for Vec<u8>` are both behind it) and is NOT
+# one of `aead`'s defaults — those are `["rand_core"]`, which we don't need.
+aead = { version = "0.6.1", default-features = false, features = ["alloc"], optional = true }
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
-gmcrypto-core = "=1.9.0"
+gmcrypto-core = "=1.11.0"
 rand_core = "0.10.1"
 
 [features]
+aead-traits = ["sm4-aead", "gmcrypto-core/aead-traits", "dep:aead"]
 sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]
 sm4-aead = ["gmcrypto-core/sm4-aead"]
 sm4-xts = ["gmcrypto-core/sm4-xts"]
@@ -34,6 +40,10 @@ required-features = ["tlcp"]
 [[example]]
 name = "sm4_aead"
 required-features = ["sm4-aead"]
+
+[[example]]
+name = "sm4_aead_traits"
+required-features = ["aead-traits"]
 
 [[example]]
 name = "sm4_ccm"

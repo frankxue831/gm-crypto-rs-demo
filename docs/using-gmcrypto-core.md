@@ -92,16 +92,21 @@ it — never a path / workspace / git dependency:
 
 ```toml
 [dependencies]
-gmcrypto-core = "=1.9.0"
+gmcrypto-core = "=1.11.0"
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 rand_core = "0.10.1"
 ```
+
+> 📄 **Licence:** as of 1.11.0 `gmcrypto-core` is dual-licensed `MIT OR
+> Apache-2.0` (it was `Apache-2.0` only through 1.9.0), and the published
+> archive now carries both licence texts — earlier archives carried none.
 
 Optional features turn on the gated capabilities (the default build stays lean):
 
 ```toml
 [features]
 sm4-aead         = ["gmcrypto-core/sm4-aead"]          # SM4-GCM / SM4-CCM  (guide §7)
+aead-traits      = ["sm4-aead", "gmcrypto-core/aead-traits", "dep:aead"]  # RustCrypto aead 0.6 (guide §7)
 sm4-xts          = ["gmcrypto-core/sm4-xts"]           # SM4-XTS            (guide §8)
 sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]  # SM2 key exchange   (README cookbook)
 tlcp             = ["gmcrypto-core/tlcp"]              # TLCP key schedule  (README cookbook)
@@ -399,7 +404,7 @@ won't complain.
 (AEAD)**: it encrypts *and* authenticates in one step, so tampering is detected on
 decrypt. This should be your default for symmetric encryption.
 
-> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=1.9.0", features = ["sm4-aead"] }`.
+> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=1.11.0", features = ["sm4-aead"] }`.
 > SM4-CCM lives in the same feature via `sm4::mode_ccm`.
 
 ### Correct usage
@@ -426,6 +431,49 @@ headers / metadata that must be bound to the ciphertext but can travel in the cl
 **Matching example:** `cargo run --features sm4-aead --example sm4_aead`
 
 **See also:** `cargo run --features sm4-aead --example sm4_ccm` for SM4-CCM, and `cargo run --features sm4-aead --example sm4_streaming` for chunked SM4-GCM (Sm4GcmEncryptor / Sm4GcmDecryptor).
+
+### RustCrypto `aead` traits (v1.11)
+
+Since 1.11 the same two ciphers are also available as RustCrypto
+[`aead`](https://docs.rs/aead) 0.6 types, so generic code already bounded on
+`AeadInOut` (or the blanket `Aead`) accepts SM4-GCM and SM4-CCM next to AES-GCM
+and ChaCha20Poly1305 with no glue.
+
+> 🧩 **Feature-gated, and `aead` is a companion crate:** `gmcrypto-core` does
+> not re-export it, so you name it yourself.
+
+```toml
+[dependencies]
+gmcrypto-core = { version = "=1.11.0", features = ["aead-traits"] }
+aead = { version = "0.6.1", default-features = false, features = ["alloc"] }
+```
+
+`alloc` is not decorative: the `Vec`-returning `aead::Aead` and `impl Buffer for
+Vec<u8>` are both behind it, and it is **not** one of `aead`'s default features.
+
+```rust
+use aead::consts::{U4, U7};
+use aead::{Aead, KeyInit, Payload};
+use gmcrypto_core::sm4::{Sm4Ccm, Sm4Gcm};
+
+let cipher = <Sm4Gcm as KeyInit>::new_from_slice(&key)?;
+
+// one Vec holding ciphertext || tag — byte-identical to mode_gcm::encrypt
+let wire = <Sm4Gcm as Aead>::encrypt(&cipher, &nonce.into(), Payload { msg: pt, aad })?;
+let pt = <Sm4Gcm as Aead>::decrypt(&cipher, &nonce.into(), Payload { msg: &wire, aad })?;
+
+// CCM's sizes are type parameters. Sm4Ccm defaults to a 16-byte tag and a
+// 12-byte nonce; an illegal pair is a compile error, not a runtime None.
+let short = <Sm4Ccm<U4, U7> as KeyInit>::new_from_slice(&key)?;
+```
+
+> - ✅ **Do** reach for the traits when you need ecosystem fit — one bound, many ciphers.
+> - ⚠️ **Don't** reach for them on a hot path: each call re-runs the SM4 key schedule, and the `*_in_place` methods still allocate. `mode_gcm` / `mode_ccm` stay the fast path.
+> - ⚠️ **Don't** expect detail from a failure: everything — bad tag, bad key length, oversized message — collapses to one opaque `aead::Error`. The inherent API's `None` is no more informative, but at least the two cases live in different functions.
+> - ⚠️ `aead` 0.6 is pre-1.0, so a breaking `aead` release is **not** covered by `gmcrypto-core`'s SemVer. You bump it yourself.
+> - ℹ️ `Sm4Gcm` is fixed at the canonical profile (12-byte nonce, 16-byte postfix tag). Truncated GCM tags and other nonce lengths stay on `mode_gcm`. SM4-XTS gets no `aead` type at all — it is confidentiality-only and must never be presented as an AEAD.
+
+**Matching example:** `cargo run --features aead-traits --example sm4_aead_traits`
 
 ---
 

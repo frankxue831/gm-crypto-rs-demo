@@ -26,6 +26,7 @@ jobs:
           cargo run --quiet --features sm4-aead --example sm4_aead
           cargo run --quiet --features sm4-aead --example sm4_ccm
           cargo run --quiet --features sm4-aead --example sm4_streaming
+          cargo run --quiet --features aead-traits --example sm4_aead_traits
           cargo run --quiet --features sm2-key-exchange --example sm2_key_exchange
           cargo run --quiet --features tlcp --example tlcp_key_schedule
           cargo run --quiet --features tlcp --example tlcp_record

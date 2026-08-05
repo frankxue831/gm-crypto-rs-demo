@@ -8,7 +8,7 @@ crate.
 This repository intentionally depends on the crates.io release:
 
 ```toml
-gmcrypto-core = "=1.9.0"
+gmcrypto-core = "=1.11.0"
 ```
 
 It does not use a path dependency or workspace dependency from a local
@@ -42,6 +42,7 @@ Every capability this demo exposes from `gmcrypto-core`, mapped to the CLI subco
 | SM4-GCM authenticated encryption (AEAD) | — | `examples/sm4_aead.rs` (feature `sm4-aead`) | `§7` |
 | SM4-CCM authenticated encryption (constrained AEAD) | — | `examples/sm4_ccm.rs` (feature `sm4-aead`) | `§7` |
 | SM4-GCM streaming (chunked AEAD) | — | `examples/sm4_streaming.rs` (feature `sm4-aead`) | `§7` |
+| SM4 AEAD via RustCrypto `aead` traits (`Sm4Gcm` / `Sm4Ccm`) | — | `examples/sm4_aead_traits.rs` (feature `aead-traits`) | `§7` |
 | SM2 key exchange (GB/T 32918.3, confirmed + no-confirmation) | — | `examples/sm2_key_exchange.rs` (feature `sm2-key-exchange`) | — |
 | TLCP key schedule (GB/T 38636 PRF) | — | `examples/tlcp_key_schedule.rs` (feature `tlcp`) | — |
 | TLCP record protection (GB/T 38636 §6.3) | — | `examples/tlcp_record.rs` (feature `tlcp`) | — |
@@ -122,6 +123,7 @@ test (CI runs all of them):
 | `sm4_aead` | SM4-GCM authenticated encryption | `cargo run --features sm4-aead --example sm4_aead` |
 | `sm4_ccm` | SM4-CCM in two nonce/tag shapes (12+16, 13+8) | `cargo run --features sm4-aead --example sm4_ccm` |
 | `sm4_streaming` | SM4-GCM streaming (chunked encrypt/decrypt) | `cargo run --features sm4-aead --example sm4_streaming` |
+| `sm4_aead_traits` | SM4-GCM/CCM behind RustCrypto `aead` 0.6 traits — byte-identical to `mode_gcm`/`mode_ccm` | `cargo run --features aead-traits --example sm4_aead_traits` |
 | `sm2_key_exchange` | SM2 key exchange — confirmed + no-confirmation (TLCP) variants | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
 | `tlcp_key_schedule` | TLCP PRF: master secret, key block, Finished `verify_data` | `cargo run --features tlcp --example tlcp_key_schedule` |
 | `tlcp_record` | TLCP record protect/deprotect: SM4-CBC (+ GCM) round-trip & rejection | `cargo run --features tlcp --example tlcp_record` |

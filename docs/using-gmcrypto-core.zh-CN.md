@@ -94,16 +94,21 @@ KDF 参数过弱、密文未认证、密钥材料泄露等)的 Rust 开发者。
 
 ```toml
 [dependencies]
-gmcrypto-core = "=1.9.0"
+gmcrypto-core = "=1.11.0"
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 rand_core = "0.10.1"
 ```
+
+> 📄 **许可证:** 自 1.11.0 起,`gmcrypto-core` 采用 `MIT OR Apache-2.0` 双许可
+> (1.9.0 及更早版本仅为 `Apache-2.0`),并且已发布的归档中现在包含两份许可证
+> 文本 —— 更早的归档一份都没有。
 
 可选 feature 用于开启受门控的能力(默认构建保持精简):
 
 ```toml
 [features]
 sm4-aead         = ["gmcrypto-core/sm4-aead"]          # SM4-GCM / SM4-CCM  (guide §7)
+aead-traits      = ["sm4-aead", "gmcrypto-core/aead-traits", "dep:aead"]  # RustCrypto aead 0.6 (guide §7)
 sm4-xts          = ["gmcrypto-core/sm4-xts"]           # SM4-XTS            (guide §8)
 sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]  # SM2 key exchange   (README cookbook)
 tlcp             = ["gmcrypto-core/tlcp"]              # TLCP key schedule  (README cookbook)
@@ -408,7 +413,7 @@ CBC 和 CTR 无法检测篡改 —— 攻击者可以翻转比特,而解密不�
 **它是什么:** SM4-GCM 是**带关联数据的认证加密(AEAD)**:它在一步内同时
 完成加密*与*认证,因此解密时能检测出篡改。这应是你做对称加密时的默认选择。
 
-> 🧩 **需要开启特性:** `gmcrypto-core = { version = "=1.9.0", features = ["sm4-aead"] }`。
+> 🧩 **需要开启特性:** `gmcrypto-core = { version = "=1.11.0", features = ["sm4-aead"] }`。
 > SM4-CCM 位于同一特性之下,通过 `sm4::mode_ccm` 使用。
 
 <a id="correct-usage-3"></a>
@@ -437,6 +442,50 @@ let pt = mode_gcm::decrypt(&key, &nonce, aad, &ciphertext, &tag).expect("auth ok
 **对应示例:** `cargo run --features sm4-aead --example sm4_aead`
 
 **另见:** `cargo run --features sm4-aead --example sm4_ccm`(SM4-CCM),以及 `cargo run --features sm4-aead --example sm4_streaming`(分块流式 SM4-GCM,使用 Sm4GcmEncryptor / Sm4GcmDecryptor)。
+
+<a id="rustcrypto-aead-traits-v111"></a>
+### RustCrypto `aead` trait 形态(v1.11)
+
+自 1.11 起,同样这两个密码算法也以 RustCrypto [`aead`](https://docs.rs/aead) 0.6
+类型的形态提供:已经以 `AeadInOut`(或通过一揽子实现得到的 `Aead`)为约束的
+泛型代码,无需任何胶水代码即可接纳 SM4-GCM 与 SM4-CCM,与 AES-GCM、
+ChaCha20Poly1305 并列。
+
+> 🧩 **需要开启特性,且 `aead` 是配套 crate:** `gmcrypto-core` 并不转导出它,
+> 因此需要你自己声明。
+
+```toml
+[dependencies]
+gmcrypto-core = { version = "=1.11.0", features = ["aead-traits"] }
+aead = { version = "0.6.1", default-features = false, features = ["alloc"] }
+```
+
+`alloc` 并非可有可无:返回 `Vec` 的 `aead::Aead` 与 `impl Buffer for Vec<u8>`
+都在它之后,而且它**不是** `aead` 的默认特性之一。
+
+```rust
+use aead::consts::{U4, U7};
+use aead::{Aead, KeyInit, Payload};
+use gmcrypto_core::sm4::{Sm4Ccm, Sm4Gcm};
+
+let cipher = <Sm4Gcm as KeyInit>::new_from_slice(&key)?;
+
+// one Vec holding ciphertext || tag — byte-identical to mode_gcm::encrypt
+let wire = <Sm4Gcm as Aead>::encrypt(&cipher, &nonce.into(), Payload { msg: pt, aad })?;
+let pt = <Sm4Gcm as Aead>::decrypt(&cipher, &nonce.into(), Payload { msg: &wire, aad })?;
+
+// CCM's sizes are type parameters. Sm4Ccm defaults to a 16-byte tag and a
+// 12-byte nonce; an illegal pair is a compile error, not a runtime None.
+let short = <Sm4Ccm<U4, U7> as KeyInit>::new_from_slice(&key)?;
+```
+
+> - ✅ **该做:** 当你需要生态互操作时使用这些 trait —— 一条约束,多种密码算法。
+> - ⚠️ **不该做:** 在热路径上使用它们:每次调用都会重新执行一遍 SM4 密钥编排,而且带 `*_in_place` 的方法仍会分配内存。`mode_gcm` / `mode_ccm` 才是快路径。
+> - ⚠️ **不该做:** 指望从失败中得到细节:一切失败 —— 标签错误、密钥长度错误、消息超长 —— 都收敛为同一个不透明的 `aead::Error`。原生 API 的 `None` 同样不提供信息,但至少这两种情况分处不同函数。
+> - ⚠️ `aead` 0.6 尚未到 1.0,因此 `aead` 的破坏性发布**不在** `gmcrypto-core` 的 SemVer 承诺范围内,需要你自己跟进升级。
+> - ℹ️ `Sm4Gcm` 固定为规范形态(12 字节 nonce、16 字节后置标签)。截断的 GCM 标签与其他 nonce 长度仍需使用 `mode_gcm`。SM4-XTS 完全没有对应的 `aead` 类型 —— 它只提供机密性,绝不能被当作 AEAD 呈现。
+
+**对应示例:** `cargo run --features aead-traits --example sm4_aead_traits`
 
 ---
 
