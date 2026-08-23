@@ -94,7 +94,7 @@ KDF 参数过弱、密文未认证、密钥材料泄露等)的 Rust 开发者。
 
 ```toml
 [dependencies]
-gmcrypto-core = "=1.11.0"
+gmcrypto-core = "=1.11.2"
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 rand_core = "0.10.1"
 ```
@@ -413,7 +413,7 @@ CBC 和 CTR 无法检测篡改 —— 攻击者可以翻转比特,而解密不�
 **它是什么:** SM4-GCM 是**带关联数据的认证加密(AEAD)**:它在一步内同时
 完成加密*与*认证,因此解密时能检测出篡改。这应是你做对称加密时的默认选择。
 
-> 🧩 **需要开启特性:** `gmcrypto-core = { version = "=1.11.0", features = ["sm4-aead"] }`。
+> 🧩 **需要开启特性:** `gmcrypto-core = { version = "=1.11.2", features = ["sm4-aead"] }`。
 > SM4-CCM 位于同一特性之下,通过 `sm4::mode_ccm` 使用。
 
 <a id="correct-usage-3"></a>
@@ -456,7 +456,7 @@ ChaCha20Poly1305 并列。
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.11.0", features = ["aead-traits"] }
+gmcrypto-core = { version = "=1.11.2", features = ["aead-traits"] }
 aead = { version = "0.6.1", default-features = false, features = ["alloc"] }
 ```
 

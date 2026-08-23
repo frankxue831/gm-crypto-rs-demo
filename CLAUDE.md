@@ -40,7 +40,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
   `tlcp_record` (`tlcp`); `sm4_xts` (`sm4-xts`).
 
 ## Gotchas
-- **Keep the pin exact:** `gmcrypto-core = "=1.11.0"` — never a path/workspace/git
+- **Keep the pin exact:** `gmcrypto-core = "=1.11.2"` — never a path/workspace/git
   dep (it would defeat the published-crate smoke test).
 - **Gated examples** need their feature flag (`sm4-aead` for `sm4_aead`/`sm4_ccm`/`sm4_streaming`,
   `aead-traits` for `sm4_aead_traits`, `sm2-key-exchange` for `sm2_key_exchange`, `tlcp` for

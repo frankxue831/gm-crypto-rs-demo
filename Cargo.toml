@@ -15,7 +15,7 @@ publish = false
 # one of `aead`'s defaults — those are `["rand_core"]`, which we don't need.
 aead = { version = "0.6.1", default-features = false, features = ["alloc"], optional = true }
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
-gmcrypto-core = "=1.11.0"
+gmcrypto-core = "=1.11.2"
 rand_core = "0.10.1"
 
 [features]
