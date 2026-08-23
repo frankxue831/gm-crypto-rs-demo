@@ -199,6 +199,45 @@ let digest = hasher.finalize(); // identical to sm3::hash(b"abc")
 
 **对应示例:** `cargo run --example sm3_hashing`
 
+### RustCrypto `digest` trait 形态
+
+`Sm3` 同时实现了 RustCrypto [`digest`](https://docs.rs/digest) 0.11 的一组
+trait,因此已经按 `D: Digest` 约束写好的代码可以直接接纳 SM3,与 SHA-2 并列,
+无需任何胶水代码。
+
+> 🧩 **需要开启特性,且 `digest` 是配套 crate:** `gmcrypto-core` 不会重导出它,
+> 需要你自己声明。
+
+```toml
+[dependencies]
+gmcrypto-core = { version = "=1.11.2", features = ["digest-traits"] }
+digest = { version = "0.11.3", default-features = false, features = ["mac"] }
+```
+
+`mac` 并非可有可无:`digest::Mac` —— 也就是 HMAC-SM3 的全部 trait 表面
+([§2](#2-message-authentication-and-key-derivation-hmac-sm3-pbkdf2))—— 都在它后面,而它**不属于**
+`digest` 的默认特性。
+
+```rust
+use digest::Digest;
+use gmcrypto_core::sm3::Sm3;
+
+// Name the trait. `Sm3` has inherent `update` / `finalize` too, and inherent
+// methods win: `hasher.finalize()` returns [u8; 32], the trait one Output<Sm3>.
+let digest = <Sm3 as Digest>::digest(b"abc");
+
+let mut hasher = <Sm3 as Digest>::new();
+Digest::update(&mut hasher, b"a");
+Digest::update(&mut hasher, b"bc");
+assert_eq!(<Sm3 as Digest>::finalize(hasher), digest);
+```
+
+> - ✅ **Do** 在需要生态互通时使用这组 trait —— 一个 `D: Digest` 约束,可接多种哈希函数。
+> - ⚠️ **Don't** 写 `hasher.finalize()` 却以为调用的是 trait 方法。固有方法优先,而且两者返回类型不同,所以必须显式写出 trait —— 在这里 UFCS 是硬性要求,而非风格取舍。
+> - ℹ️ `digest` 0.11 尚未到 1.0,因此 `digest` 的破坏性发布**不在** `gmcrypto-core` 的 SemVer 保证范围内,需要你自己升级。
+
+**对应示例:** `cargo run --features digest-traits --example sm3_digest_traits`
+
 ---
 
 <a id="2-message-authentication-and-key-derivation-hmac-sm3-pbkdf2"></a>
@@ -252,6 +291,33 @@ pbkdf2_hmac_sm3(password, salt, 600_000, &mut derived).expect("kdf");
 > - ⚠️ **不该做:** 用裸的 SM3 哈希做口令存储。
 
 **对应示例:** `cargo run --example hmac_and_kdf`
+
+### RustCrypto `digest::Mac` trait 形态
+
+`HmacSm3` 在同一个 `digest-traits` 特性、同一个配套 crate 依赖下实现了
+`digest::Mac`(见 [§1](#1-sm3-hashing))。有两点让它无法成为无声的等价替换,而且
+都只在泛型代码里才暴露出来。
+
+```rust
+use digest::{KeyInit, Mac};
+use gmcrypto_core::hmac::HmacSm3;
+
+// `KeySize` is 64 (the SM3 block size), but RFC 2104 keys are any length, so
+// `new_from_slice` — not `KeyInit::new` — is the constructor to reach for.
+let mac = <HmacSm3 as KeyInit>::new_from_slice(key)?;
+let tag = Mac::finalize(Mac::chain_update(mac, msg)).into_bytes();
+
+// verify_slice is the constant-time comparison. Never `==` the tag bytes.
+let checked = <HmacSm3 as KeyInit>::new_from_slice(key)?;
+Mac::verify_slice(Mac::chain_update(checked, msg), &tag)?;
+```
+
+> - ⚠️ **Don't** 对 `HmacSm3` 调用 `Reset::reset` —— 它会**直接 panic**,而且是有意为之。该类型不保留密钥副本,重置没有确定含义;上游宁可显式 panic,也不愿留下一个悄悄做错事的空实现。以 `Mac + Reset` 为约束的泛型代码,是 HMAC-SM3 唯一不能互换的地方。
+> - ⚠️ **Don't** 用 `KeyInit::new` 构造:它接收 64 字节的 `Key<HmacSm3>`,普通的 20 或 32 字节密钥根本传不进去。
+> - ✅ **Do** 用 `Mac::verify_slice` 验证,而不要自己比较标签字节 —— 它才是常量时间路径(§9 规则 5)。
+> - ℹ️ `HmacSm3` 没有实现 `FixedOutputReset`,因此它上面不存在 `Mac::finalize_reset`。`Sm3` 两者都有;这两个类型在这一点上并不对称。
+
+**对应示例:** `cargo run --features digest-traits --example sm3_digest_traits`
 
 ---
 
@@ -404,6 +470,40 @@ CBC 和 CTR 无法检测篡改 —— 攻击者可以翻转比特,而解密不�
 > 如果必须使用 CBC / CTR,请在密文之上叠加一层 HMAC-SM3(先加密后 MAC)。
 
 **对应示例:** `cargo run --example sm4_cbc_ctr`
+
+### RustCrypto `cipher` trait 形态
+
+`Sm4Cipher` 实现了 RustCrypto [`cipher`](https://docs.rs/cipher) 0.5 的分组密码
+trait,因此以 `BlockCipherEncrypt` 为约束的通用构造可以直接接纳 SM4,与 AES
+并列。
+
+> 🧩 **需要开启特性,且 `cipher` 是配套 crate:** `gmcrypto-core` 不会重导出它,
+> 需要你自己声明。
+
+```toml
+[dependencies]
+gmcrypto-core = { version = "=1.11.2", features = ["cipher-traits"] }
+cipher = { version = "0.5.2", default-features = false }
+```
+
+```rust
+use cipher::array::Array;
+use cipher::{BlockCipherEncrypt, KeyInit};
+use gmcrypto_core::sm4::Sm4Cipher;
+
+// Name the trait: the inherent `Sm4Cipher::new` takes &[u8; 16] and the
+// inherent `encrypt_block` takes &mut [u8; 16], not the trait's Array type.
+let cipher = <Sm4Cipher as KeyInit>::new_from_slice(&key)?;
+let mut block = Array::from(plaintext_block);
+<Sm4Cipher as BlockCipherEncrypt>::encrypt_block(&cipher, &mut block);
+```
+
+> - ⚠️ **Don't** 用这层接口加密真实数据。对多个分组调用 `encrypt_blocks` **就是 ECB**:相同的明文分组会得到相同的密文分组,从而泄漏结构。请使用 SM4-GCM([§7](#7-sm4-authenticated-encryption-gcm-and-ccm)),或按上文所述为 CBC / CTR 配一个 MAC。
+> - ✅ **Do** 用这组 trait 把 SM4 交给期望一个分组密码的通用构造 —— 这正是它们存在的意义。
+> - ℹ️ 后端声明的 `ParBlocksSize = U1`,因此即便上游开启了 `sm4-bitsliced-simd`,trait 的 `encrypt_blocks` 也拿不到 SIMD 批处理。批处理只存在于固有方法 `Sm4Cipher::encrypt_blocks` 上。
+> - ℹ️ `cipher` 0.5 尚未到 1.0,因此 `cipher` 的破坏性发布**不在** `gmcrypto-core` 的 SemVer 保证范围内,需要你自己升级。
+
+**对应示例:** `cargo run --features cipher-traits --example sm4_cipher_traits`
 
 ---
 

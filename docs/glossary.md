@@ -44,7 +44,9 @@ API names, crate names, commands, filenames, feature flags, error messages, and 
 | trait | trait | Rust ecosystem term; keep English (as with "crate") |
 | sealed trait | 密封 trait | a trait only the defining crate can implement; used to fix a closed set (CCM's legal tag/nonce sizes) |
 | RustCrypto | RustCrypto | the Rust cryptography organisation and its trait ecosystem (`aead`, `digest`, `cipher`); proper noun, not translated |
-| companion crate | 配套 crate | a separate crate the caller must add themselves because the primary crate does not re-export it (e.g. `aead` for `aead-traits`) |
+| companion crate | 配套 crate | a separate crate the caller must add themselves because the primary crate does not re-export it (`aead`, `digest`, `cipher` — one per trait fit) |
+| UFCS / fully-qualified syntax | 完全限定语法 | `<T as Trait>::method(..)`; required where an inherent method of the same name would win instead (`Sm3`, `HmacSm3`, `Sm4Cipher`) |
+| ECB | ECB(电码本模式) | enciphering each block independently under one key, so equal plaintext blocks give equal ciphertext blocks; keep the acronym English |
 | round-trip | 往返 | as in "encrypt-then-decrypt round-trip" |
 | constant-time comparison | 恒定时间比较 | |
 | side channel | 侧信道 | |

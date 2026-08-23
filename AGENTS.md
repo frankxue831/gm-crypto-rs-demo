@@ -26,13 +26,15 @@ Do not run the deprecated `superpowers-codex bootstrap` command.
 - Package manager and build tool: Cargo.
 - Primary dependency: published `gmcrypto-core = "=1.11.2"` from crates.io.
 - RNG dependencies: `getrandom` with `sys_rng`, plus `rand_core`.
-- Optional trait-interop dependency: `aead = "0.6.1"` (RustCrypto AEAD traits), pulled
-  only by the `aead-traits` feature; `gmcrypto-core` does not re-export it, so a
-  downstream consumer must declare it themselves.
+- Optional trait-interop dependencies, one per RustCrypto trait fit: `aead = "0.6.1"`
+  (pulled only by `aead-traits`), `digest = "0.11.3"` with `features = ["mac"]` (only by
+  `digest-traits`), and `cipher = "0.5.2"` (only by `cipher-traits`). `gmcrypto-core`
+  re-exports none of them, so a downstream consumer declares each themselves. The default
+  build resolves none of the three.
 - Test surface: Rust unit/integration tests and CLI smoke tests under `tests/`.
 - CI baseline: GitHub Actions (Rust toolchain `1.85`) runs `cargo clippy -D warnings`,
   `cargo test`, and every example — the default set plus the `sm4-aead` / `aead-traits` /
-  `sm2-key-exchange` / `tlcp` / `sm4-xts` gated ones.
+  `digest-traits` / `cipher-traits` / `sm2-key-exchange` / `tlcp` / `sm4-xts` gated ones.
 
 ## Architectural Principles
 

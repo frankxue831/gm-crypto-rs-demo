@@ -194,6 +194,45 @@ let digest = hasher.finalize(); // identical to sm3::hash(b"abc")
 
 **Matching example:** `cargo run --example sm3_hashing`
 
+### RustCrypto `digest` traits
+
+`Sm3` also implements the RustCrypto [`digest`](https://docs.rs/digest) 0.11
+traits, so code already written against a `D: Digest` bound accepts SM3 next to
+SHA-2 with no glue.
+
+> 🧩 **Feature-gated, and `digest` is a companion crate:** `gmcrypto-core` does
+> not re-export it, so you name it yourself.
+
+```toml
+[dependencies]
+gmcrypto-core = { version = "=1.11.2", features = ["digest-traits"] }
+digest = { version = "0.11.3", default-features = false, features = ["mac"] }
+```
+
+`mac` is not decorative: `digest::Mac` — all of HMAC-SM3's trait surface
+([§2](#2-message-authentication-and-key-derivation-hmac-sm3-pbkdf2)) — sits
+behind it, and it is **not** one of `digest`'s default features.
+
+```rust
+use digest::Digest;
+use gmcrypto_core::sm3::Sm3;
+
+// Name the trait. `Sm3` has inherent `update` / `finalize` too, and inherent
+// methods win: `hasher.finalize()` returns [u8; 32], the trait one Output<Sm3>.
+let digest = <Sm3 as Digest>::digest(b"abc");
+
+let mut hasher = <Sm3 as Digest>::new();
+Digest::update(&mut hasher, b"a");
+Digest::update(&mut hasher, b"bc");
+assert_eq!(<Sm3 as Digest>::finalize(hasher), digest);
+```
+
+> - ✅ **Do** reach for the traits when you need ecosystem fit — one `D: Digest` bound, many hash functions.
+> - ⚠️ **Don't** write `hasher.finalize()` and assume you called the trait. The inherent method wins and the two return different types, so name the trait — here UFCS is a requirement, not a style choice.
+> - ℹ️ `digest` 0.11 is pre-1.0, so a breaking `digest` release is **not** covered by `gmcrypto-core`'s SemVer. You bump it yourself.
+
+**Matching example:** `cargo run --features digest-traits --example sm3_digest_traits`
+
 ---
 
 ## 2. Message authentication and key derivation (HMAC-SM3, PBKDF2)
@@ -244,6 +283,33 @@ Same password + same salt always derive the same key; a different salt diverges.
 > - ⚠️ **Don't** use a plain SM3 hash for password storage.
 
 **Matching example:** `cargo run --example hmac_and_kdf`
+
+### RustCrypto `digest::Mac` trait
+
+`HmacSm3` implements `digest::Mac` behind the same `digest-traits` flag and the
+same companion-crate dependency as [§1](#1-sm3-hashing). Two things stop it from
+being a silent drop-in, and both surface only in generic code.
+
+```rust
+use digest::{KeyInit, Mac};
+use gmcrypto_core::hmac::HmacSm3;
+
+// `KeySize` is 64 (the SM3 block size), but RFC 2104 keys are any length, so
+// `new_from_slice` — not `KeyInit::new` — is the constructor to reach for.
+let mac = <HmacSm3 as KeyInit>::new_from_slice(key)?;
+let tag = Mac::finalize(Mac::chain_update(mac, msg)).into_bytes();
+
+// verify_slice is the constant-time comparison. Never `==` the tag bytes.
+let checked = <HmacSm3 as KeyInit>::new_from_slice(key)?;
+Mac::verify_slice(Mac::chain_update(checked, msg), &tag)?;
+```
+
+> - ⚠️ **Don't** call `Reset::reset` on an `HmacSm3` — it **panics**, deliberately. The type keeps no copy of the key, so a reset has no defined meaning, and upstream chose a loud panic over a silently wrong no-op. Generic code bounded on `Mac + Reset` is the one place HMAC-SM3 is not interchangeable.
+> - ⚠️ **Don't** construct through `KeyInit::new`: it takes a 64-byte `Key<HmacSm3>`, so an ordinary 20- or 32-byte key cannot be passed to it at all.
+> - ✅ **Do** verify with `Mac::verify_slice` rather than comparing tag bytes yourself — it is the constant-time path (§9 rule 5).
+> - ℹ️ `HmacSm3` implements no `FixedOutputReset`, so `Mac::finalize_reset` does not exist on it. `Sm3` has both; the two types are not symmetric here.
+
+**Matching example:** `cargo run --features digest-traits --example sm3_digest_traits`
 
 ---
 
@@ -396,6 +462,40 @@ won't complain.
 > If you must use CBC / CTR, add an HMAC-SM3 over the ciphertext (encrypt-then-MAC).
 
 **Matching example:** `cargo run --example sm4_cbc_ctr`
+
+### RustCrypto `cipher` traits
+
+`Sm4Cipher` implements the RustCrypto [`cipher`](https://docs.rs/cipher) 0.5
+block-cipher traits, so a generic construction bounded on `BlockCipherEncrypt`
+takes SM4 next to AES.
+
+> 🧩 **Feature-gated, and `cipher` is a companion crate:** `gmcrypto-core` does
+> not re-export it, so you name it yourself.
+
+```toml
+[dependencies]
+gmcrypto-core = { version = "=1.11.2", features = ["cipher-traits"] }
+cipher = { version = "0.5.2", default-features = false }
+```
+
+```rust
+use cipher::array::Array;
+use cipher::{BlockCipherEncrypt, KeyInit};
+use gmcrypto_core::sm4::Sm4Cipher;
+
+// Name the trait: the inherent `Sm4Cipher::new` takes &[u8; 16] and the
+// inherent `encrypt_block` takes &mut [u8; 16], not the trait's Array type.
+let cipher = <Sm4Cipher as KeyInit>::new_from_slice(&key)?;
+let mut block = Array::from(plaintext_block);
+<Sm4Cipher as BlockCipherEncrypt>::encrypt_block(&cipher, &mut block);
+```
+
+> - ⚠️ **Don't** encrypt real data through this surface. `encrypt_blocks` over more than one block **is ECB**: equal plaintext blocks give equal ciphertext blocks, which leaks structure. Use SM4-GCM ([§7](#7-sm4-authenticated-encryption-gcm-and-ccm)), or CBC / CTR with a MAC as above.
+> - ✅ **Do** reach for the traits to hand SM4 to a generic construction that expects a block cipher — that is the whole purpose.
+> - ℹ️ The backend declares `ParBlocksSize = U1`, so the trait's `encrypt_blocks` gets no SIMD fan-out even under upstream's `sm4-bitsliced-simd`. Batching lives on the inherent `Sm4Cipher::encrypt_blocks`.
+> - ℹ️ `cipher` 0.5 is pre-1.0, so a breaking `cipher` release is **not** covered by `gmcrypto-core`'s SemVer. You bump it yourself.
+
+**Matching example:** `cargo run --features cipher-traits --example sm4_cipher_traits`
 
 ---
 

@@ -19,6 +19,10 @@ use gmcrypto_core::sm4::Sm4Cipher;
 fn main() {
     println!("== SM4 block primitive via the RustCrypto `cipher` traits ==\n");
 
+    // DEMO ONLY: reuses the crate-wide `DEMO_SM4_KEY` so this example's block
+    // output is reproducible and comparable with `sm4_cbc_ctr`'s raw-block section.
+    // Production: derive per-session keys via a KDF or unwrap a KEK-wrapped DEK; never hard-code.
+    // Reusing this risks: anyone with the source can decrypt every block produced with it.
     let key = DEMO_SM4_KEY;
     let plaintext_block = [0x37u8; 16];
 

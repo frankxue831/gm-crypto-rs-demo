@@ -93,7 +93,9 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 | `sm2_sign_verify` | SM2 签名/验证、签名者 ID 的 `Z` 值、篡改拒绝 | `cargo run --example sm2_sign_verify` |
 | `sm2_encrypt_decrypt` | SM2 公钥加密 | `cargo run --example sm2_encrypt_decrypt` |
 | `sm2_key_encoding` | PKCS#8 / SEC1 / SPKI / PEM 与加密 PKCS#8 | `cargo run --example sm2_key_encoding` |
+| `sm3_digest_traits` | SM3 / HMAC-SM3 的 RustCrypto `digest` 0.11 trait 形态 —— 与 `sm3::hash`/`hmac_sm3` 逐字节一致 | `cargo run --features digest-traits --example sm3_digest_traits` |
 | `sm4_cbc_ctr` | SM4 CBC + CTR 与原始分组 | `cargo run --example sm4_cbc_ctr` |
+| `sm4_cipher_traits` | `Sm4Cipher` 的 RustCrypto `cipher` 0.5 trait 形态 —— 逐字节一致,以及多分组调用为何就是 ECB | `cargo run --features cipher-traits --example sm4_cipher_traits` |
 | `sm4_aead` | SM4-GCM 认证加密 | `cargo run --features sm4-aead --example sm4_aead` |
 | `sm4_ccm` | SM4-CCM 的两种 nonce/标签形态(12+16、13+8) | `cargo run --features sm4-aead --example sm4_ccm` |
 | `sm4_streaming` | SM4-GCM 流式加解密(分块处理) | `cargo run --features sm4-aead --example sm4_streaming` |
@@ -115,10 +117,12 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 | SM3 哈希(GB/T 32905) | `cargo run -- hash <msg>` | `examples/sm3_hashing.rs` | `§1` |
 | HMAC-SM3 消息认证 | `cargo run -- hmac <key-hex> <msg>` | `examples/hmac_and_kdf.rs` | `§2` |
 | PBKDF2-HMAC-SM3 口令拉伸 | `cargo run -- pbkdf2 <pw> <salt-hex> <iter> <len>` | `examples/hmac_and_kdf.rs` | `§2` |
+| SM3 / HMAC-SM3 的 RustCrypto `digest` trait 形态(`Sm3` / `HmacSm3`) | — | `examples/sm3_digest_traits.rs`(特性 `digest-traits`) | `§1`、`§2` |
 | SM2 数字签名(GB/T 32918.2) | `cargo run -- sign` / `verify` | `examples/sm2_sign_verify.rs` | `§3` |
 | SM2 公钥加密(GB/T 32918.4) | `cargo run -- encrypt` / `decrypt` | `examples/sm2_encrypt_decrypt.rs` | `§4` |
 | SM2 密钥编码(PKCS#8 / SEC1 / SPKI / PEM) | `cargo run -- key-info` | `examples/sm2_key_encoding.rs` | `§5` |
 | SM4-CBC / CTR 对称加密 | `cargo run -- sm4-encrypt` / `sm4-decrypt` | `examples/sm4_cbc_ctr.rs` | `§6` |
+| SM4 分组原语的 RustCrypto `cipher` trait 形态(`Sm4Cipher`) | — | `examples/sm4_cipher_traits.rs`(特性 `cipher-traits`) | `§6` |
 | SM4-GCM 认证加密(AEAD) | — | `examples/sm4_aead.rs`(特性 `sm4-aead`) | `§7` |
 | SM4-CCM 认证加密(受限场景 AEAD) | — | `examples/sm4_ccm.rs`(特性 `sm4-aead`) | `§7` |
 | SM4-GCM 流式加解密(分块 AEAD) | — | `examples/sm4_streaming.rs`(特性 `sm4-aead`) | `§7` |

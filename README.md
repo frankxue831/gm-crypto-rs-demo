@@ -35,10 +35,12 @@ Every capability this demo exposes from `gmcrypto-core`, mapped to the CLI subco
 | SM3 hashing (GB/T 32905) | `cargo run -- hash <msg>` | `examples/sm3_hashing.rs` | `§1` |
 | HMAC-SM3 message authentication | `cargo run -- hmac <key-hex> <msg>` | `examples/hmac_and_kdf.rs` | `§2` |
 | PBKDF2-HMAC-SM3 password stretching | `cargo run -- pbkdf2 <pw> <salt-hex> <iter> <len>` | `examples/hmac_and_kdf.rs` | `§2` |
+| SM3 / HMAC-SM3 via RustCrypto `digest` traits (`Sm3` / `HmacSm3`) | — | `examples/sm3_digest_traits.rs` (feature `digest-traits`) | `§1`, `§2` |
 | SM2 digital signatures (GB/T 32918.2) | `cargo run -- sign` / `verify` | `examples/sm2_sign_verify.rs` | `§3` |
 | SM2 public-key encryption (GB/T 32918.4) | `cargo run -- encrypt` / `decrypt` | `examples/sm2_encrypt_decrypt.rs` | `§4` |
 | SM2 key encoding (PKCS#8 / SEC1 / SPKI / PEM) | `cargo run -- key-info` | `examples/sm2_key_encoding.rs` | `§5` |
 | SM4-CBC / CTR symmetric encryption | `cargo run -- sm4-encrypt` / `sm4-decrypt` | `examples/sm4_cbc_ctr.rs` | `§6` |
+| SM4 block primitive via RustCrypto `cipher` traits (`Sm4Cipher`) | — | `examples/sm4_cipher_traits.rs` (feature `cipher-traits`) | `§6` |
 | SM4-GCM authenticated encryption (AEAD) | — | `examples/sm4_aead.rs` (feature `sm4-aead`) | `§7` |
 | SM4-CCM authenticated encryption (constrained AEAD) | — | `examples/sm4_ccm.rs` (feature `sm4-aead`) | `§7` |
 | SM4-GCM streaming (chunked AEAD) | — | `examples/sm4_streaming.rs` (feature `sm4-aead`) | `§7` |
@@ -119,7 +121,9 @@ test (CI runs all of them):
 | `sm2_sign_verify` | SM2 sign/verify, signer-ID `Z`, tamper rejection | `cargo run --example sm2_sign_verify` |
 | `sm2_encrypt_decrypt` | SM2 public-key encryption | `cargo run --example sm2_encrypt_decrypt` |
 | `sm2_key_encoding` | PKCS#8 / SEC1 / SPKI / PEM + encrypted PKCS#8 | `cargo run --example sm2_key_encoding` |
+| `sm3_digest_traits` | SM3 / HMAC-SM3 behind RustCrypto `digest` 0.11 traits — byte-identical to `sm3::hash`/`hmac_sm3` | `cargo run --features digest-traits --example sm3_digest_traits` |
 | `sm4_cbc_ctr` | SM4 CBC + CTR + raw block | `cargo run --example sm4_cbc_ctr` |
+| `sm4_cipher_traits` | `Sm4Cipher` behind RustCrypto `cipher` 0.5 traits — byte-identical, and why the multi-block call is ECB | `cargo run --features cipher-traits --example sm4_cipher_traits` |
 | `sm4_aead` | SM4-GCM authenticated encryption | `cargo run --features sm4-aead --example sm4_aead` |
 | `sm4_ccm` | SM4-CCM in two nonce/tag shapes (12+16, 13+8) | `cargo run --features sm4-aead --example sm4_ccm` |
 | `sm4_streaming` | SM4-GCM streaming (chunked encrypt/decrypt) | `cargo run --features sm4-aead --example sm4_streaming` |
