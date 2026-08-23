@@ -19,6 +19,8 @@ nonces, weak KDF settings, unauthenticated ciphertext, leaked key material.
 - **Correct usage** — the key calls, with a runnable snippet.
 - **Do / Don't** — the rules that actually matter in production.
 - **Matching example** — the file under `examples/` and the command to run it.
+- **Optional: ecosystem fit** — some sections end with a RustCrypto-trait H3.
+  Skip it unless you need a generic bound (`D: Digest`, `Mac`, `BlockCipherEncrypt`, `Aead`).
 
 > ⚠️ **Every key, IV, nonce, salt, and password in this demo (and in this guide)
 > is a fixed _public fixture_.** They exist to make snippets reproducible. Never
@@ -57,6 +59,10 @@ Use this as a guided path, not a loose collection of notes. Start with setup,
 then move from primitives → keys / signatures / encryption → symmetric modes →
 final review.
 
+Two tracks: the numbered sections are **correct SDK usage**. Optional
+RustCrypto-trait H3s at the end of §1, §2, §6, and §7 are **ecosystem fit** —
+skip them unless you already write generic code against those traits.
+
 | Stage | Read | What you get |
 |---|---|---|
 | Foundation | [§0](#0-getting-started-setup-rng-and-helpers) | Dependency setup, OS RNG, shared helpers |
@@ -69,12 +75,16 @@ final review.
 
 0. [Getting started: setup, RNG, and helpers](#0-getting-started-setup-rng-and-helpers)
 1. [SM3 hashing](#1-sm3-hashing)
+   - [RustCrypto `digest` traits (optional)](#rustcrypto-digest-traits)
 2. [Message authentication and key derivation (HMAC-SM3, PBKDF2)](#2-message-authentication-and-key-derivation-hmac-sm3-pbkdf2)
+   - [RustCrypto `digest::Mac` (optional)](#rustcrypto-digestmac-trait)
 3. [SM2 digital signatures](#3-sm2-digital-signatures)
 4. [SM2 public-key encryption](#4-sm2-public-key-encryption)
 5. [SM2 key management and serialization](#5-sm2-key-management-and-serialization)
 6. [SM4 symmetric encryption: CBC and CTR](#6-sm4-symmetric-encryption-cbc-and-ctr)
+   - [RustCrypto `cipher` traits (optional)](#rustcrypto-cipher-traits)
 7. [SM4 authenticated encryption: GCM and CCM](#7-sm4-authenticated-encryption-gcm-and-ccm)
+   - [RustCrypto `aead` traits (optional)](#rustcrypto-aead-traits-v111)
 8. [SM4-XTS disk and sector encryption](#8-sm4-xts-disk-and-sector-encryption)
 9. [Doing crypto correctly (cross-cutting review)](#9-doing-crypto-correctly-cross-cutting-review)
 
@@ -101,7 +111,9 @@ rand_core = "0.10.1"
 > Apache-2.0` (it was `Apache-2.0` only through 1.9.0), and the published
 > archive now carries both licence texts — earlier archives carried none.
 
-Optional features turn on the gated capabilities (the default build stays lean):
+Optional features turn on the gated capabilities (the default build stays lean).
+The fence below is a capability map — comments and all — not a dump of this
+demo's `Cargo.toml` (that file is alphabetical and has no comments):
 
 ```toml
 [features]
@@ -196,7 +208,10 @@ let digest = hasher.finalize(); // identical to sm3::hash(b"abc")
 
 **Matching example:** `cargo run --example sm3_hashing`
 
+<a id="rustcrypto-digest-traits"></a>
 ### RustCrypto `digest` traits
+
+> 📎 **Optional (ecosystem fit):** skip unless you need a `D: Digest` bound.
 
 `Sm3` also implements the RustCrypto [`digest`](https://docs.rs/digest) 0.11
 traits, so code already written against a `D: Digest` bound accepts SM3 next to
@@ -286,7 +301,10 @@ Same password + same salt always derive the same key; a different salt diverges.
 
 **Matching example:** `cargo run --example hmac_and_kdf`
 
+<a id="rustcrypto-digestmac-trait"></a>
 ### RustCrypto `digest::Mac` trait
+
+> 📎 **Optional (ecosystem fit):** skip unless you need a `digest::Mac` bound.
 
 `HmacSm3` implements `digest::Mac` behind the same `digest-traits` flag and the
 same companion-crate dependency as [§1](#1-sm3-hashing). Two things stop it from
@@ -465,7 +483,10 @@ won't complain.
 
 **Matching example:** `cargo run --example sm4_cbc_ctr`
 
+<a id="rustcrypto-cipher-traits"></a>
 ### RustCrypto `cipher` traits
+
+> 📎 **Optional (ecosystem fit):** skip unless you need a `BlockCipherEncrypt` bound.
 
 `Sm4Cipher` implements the RustCrypto [`cipher`](https://docs.rs/cipher) 0.5
 block-cipher traits, so a generic construction bounded on `BlockCipherEncrypt`
@@ -535,7 +556,10 @@ headers / metadata that must be bound to the ciphertext but can travel in the cl
 
 **See also:** `cargo run --features sm4-aead --example sm4_ccm` for SM4-CCM, and `cargo run --features sm4-aead --example sm4_streaming` for chunked SM4-GCM (Sm4GcmEncryptor / Sm4GcmDecryptor).
 
+<a id="rustcrypto-aead-traits-v111"></a>
 ### RustCrypto `aead` traits (v1.11)
+
+> 📎 **Optional (ecosystem fit):** skip unless you need an `Aead` / `AeadInOut` bound.
 
 Since 1.11 the same two ciphers are also available as RustCrypto
 [`aead`](https://docs.rs/aead) 0.6 types, so generic code already bounded on

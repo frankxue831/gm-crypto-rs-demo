@@ -3,9 +3,10 @@
 # Verifies that every cookbook example under examples/*.rs is wired into the
 # files that hand-list the example inventory:
 #   1. .github/workflows/ci.yml      (run line)
-#   2. README.md                     (cookbook / capability table row)
-#   3. README.zh-CN.md               (the bilingual mirror of the same row)
-#   4. CLAUDE.md                     (Commands + Layout example lists)
+#   2. README.md                     (cookbook / capability tables, grouped)
+#   3. README.zh-CN.md               (the bilingual mirror of the same rows)
+#   4. CLAUDE.md                     (Commands + Layout example lists, plus
+#                                    the "all N examples" numeral in the CI gotcha)
 #
 # The repo's convention for tolerated duplication is "duplicate + machine
 # drift-check" (see scripts/check-doc-sync.sh for the bilingual doc pairs).
@@ -61,6 +62,12 @@ for path in "${EXAMPLES[@]}"; do
         fi
     done
 done
+
+COUNT=${#EXAMPLES[@]}
+if ! grep -q -- "all ${COUNT} examples" CLAUDE.md; then
+    echo "FAIL: CLAUDE.md does not say 'all ${COUNT} examples' (stale numeral?)" >&2
+    FAILED=1
+fi
 
 if [ "$FAILED" -ne 0 ]; then
     echo "FAIL: example inventory has drifted; add the missing rows/run lines above" >&2

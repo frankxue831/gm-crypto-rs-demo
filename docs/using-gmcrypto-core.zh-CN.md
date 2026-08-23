@@ -18,6 +18,8 @@ KDF 参数过弱、密文未认证、密钥材料泄露等)的 Rust 开发者。
 - **正确用法** —— 列出关键调用,并附可运行片段。
 - **该做 / 不该做** —— 生产环境中真正重要的规则。
 - **对应示例** —— `examples/` 下的文件以及运行命令。
+- **可选:生态互通** —— 部分章节末尾有 RustCrypto trait H3。
+  除非你需要泛型约束(`D: Digest`、`Mac`、`BlockCipherEncrypt`、`Aead`),否则跳过。
 
 > ⚠️ **本演示(以及本指南)中出现的所有密钥、IV、nonce、盐值和口令都是
 > 固定的_公开样例_。** 它们的存在只是为了让片段可复现,**切勿**在真实数据
@@ -56,6 +58,10 @@ KDF 参数过弱、密文未认证、密钥材料泄露等)的 Rust 开发者。
 请把本指南当作一条引导式路径,而不是一组松散的笔记。先从环境搭建开始,
 再依次走过 原语 → 密钥 / 签名 / 加密 → 对称模式 → 最终回顾。
 
+两条轨道:带编号的各节是 **SDK 正确用法**。§1、§2、§6、§7 末尾的可选
+RustCrypto trait H3 是 **生态互通** —— 除非你已经在写针对这些 trait 的泛型代码,
+否则跳过。
+
 | 阶段 | 阅读 | 你能获得 |
 |---|---|---|
 | 基础 | [§0](#0-getting-started-setup-rng-and-helpers) | 依赖配置、操作系统 RNG、共享辅助函数 |
@@ -69,12 +75,16 @@ KDF 参数过弱、密文未认证、密钥材料泄露等)的 Rust 开发者。
 
 0. [起步:环境、RNG 与辅助函数](#0-getting-started-setup-rng-and-helpers)
 1. [SM3 哈希](#1-sm3-hashing)
+   - [RustCrypto `digest` trait 形态(可选)](#rustcrypto-digest-traits)
 2. [消息认证与密钥派生(HMAC-SM3、PBKDF2)](#2-message-authentication-and-key-derivation-hmac-sm3-pbkdf2)
+   - [RustCrypto `digest::Mac`(可选)](#rustcrypto-digestmac-trait)
 3. [SM2 数字签名](#3-sm2-digital-signatures)
 4. [SM2 公钥加密](#4-sm2-public-key-encryption)
 5. [SM2 密钥管理与序列化](#5-sm2-key-management-and-serialization)
 6. [SM4 对称加密:CBC 与 CTR](#6-sm4-symmetric-encryption-cbc-and-ctr)
+   - [RustCrypto `cipher` trait 形态(可选)](#rustcrypto-cipher-traits)
 7. [SM4 认证加密:GCM 与 CCM](#7-sm4-authenticated-encryption-gcm-and-ccm)
+   - [RustCrypto `aead` trait 形态(可选)](#rustcrypto-aead-traits-v111)
 8. [SM4-XTS 磁盘与扇区加密](#8-sm4-xts-disk-and-sector-encryption)
 9. [正确地做密码学(跨章节回顾)](#9-doing-crypto-correctly-cross-cutting-review)
 
@@ -103,7 +113,9 @@ rand_core = "0.10.1"
 > (1.9.0 及更早版本仅为 `Apache-2.0`),并且已发布的归档中现在包含两份许可证
 > 文本 —— 更早的归档一份都没有。
 
-可选 feature 用于开启受门控的能力(默认构建保持精简):
+可选 feature 用于开启受门控的能力(默认构建保持精简)。
+下面的代码围栏是能力地图 —— 含注释 —— 不是本演示 `Cargo.toml` 的逐字拷贝
+(真实文件按字母序排列、没有这些注释):
 
 ```toml
 [features]
@@ -201,7 +213,10 @@ let digest = hasher.finalize(); // identical to sm3::hash(b"abc")
 
 **对应示例:** `cargo run --example sm3_hashing`
 
+<a id="rustcrypto-digest-traits"></a>
 ### RustCrypto `digest` trait 形态
+
+> 📎 **可选(生态互通):** 除非你需要 `D: Digest` 约束,否则跳过。
 
 `Sm3` 同时实现了 RustCrypto [`digest`](https://docs.rs/digest) 0.11 的一组
 trait,因此已经按 `D: Digest` 约束写好的代码可以直接接纳 SM3,与 SHA-2 并列,
@@ -234,8 +249,8 @@ Digest::update(&mut hasher, b"bc");
 assert_eq!(<Sm3 as Digest>::finalize(hasher), digest);
 ```
 
-> - ✅ **Do** 在需要生态互通时使用这组 trait —— 一个 `D: Digest` 约束,可接多种哈希函数。
-> - ⚠️ **Don't** 写 `hasher.finalize()` 却以为调用的是 trait 方法。固有方法优先,而且两者返回类型不同,所以必须显式写出 trait —— 在这里 UFCS 是硬性要求,而非风格取舍。
+> - ✅ **该做:** 在需要生态互通时使用这组 trait —— 一个 `D: Digest` 约束,可接多种哈希函数。
+> - ⚠️ **不该做:** 写 `hasher.finalize()` 却以为调用的是 trait 方法。固有方法优先,而且两者返回类型不同,所以必须显式写出 trait —— 在这里完全限定语法是硬性要求,而非风格取舍。
 > - ℹ️ `digest` 0.11 尚未到 1.0,因此 `digest` 的破坏性发布**不在** `gmcrypto-core` 的 SemVer 保证范围内,需要你自己升级。
 
 **对应示例:** `cargo run --features digest-traits --example sm3_digest_traits`
@@ -294,7 +309,10 @@ pbkdf2_hmac_sm3(password, salt, 600_000, &mut derived).expect("kdf");
 
 **对应示例:** `cargo run --example hmac_and_kdf`
 
+<a id="rustcrypto-digestmac-trait"></a>
 ### RustCrypto `digest::Mac` trait 形态
+
+> 📎 **可选(生态互通):** 除非你需要 `digest::Mac` 约束,否则跳过。
 
 `HmacSm3` 在同一个 `digest-traits` 特性、同一个配套 crate 依赖下实现了
 `digest::Mac`(见 [§1](#1-sm3-hashing))。有两点让它无法成为无声的等价替换,而且
@@ -314,9 +332,9 @@ let checked = <HmacSm3 as KeyInit>::new_from_slice(key)?;
 Mac::verify_slice(Mac::chain_update(checked, msg), &tag)?;
 ```
 
-> - ⚠️ **Don't** 对 `HmacSm3` 调用 `Reset::reset` —— 它会**直接 panic**,而且是有意为之。该类型不保留密钥副本,重置没有确定含义;上游宁可显式 panic,也不愿留下一个悄悄做错事的空实现。以 `Mac + Reset` 为约束的泛型代码,是 HMAC-SM3 唯一不能互换的地方。
-> - ⚠️ **Don't** 用 `KeyInit::new` 构造:它接收 64 字节的 `Key<HmacSm3>`,普通的 20 或 32 字节密钥根本传不进去。
-> - ✅ **Do** 用 `Mac::verify_slice` 验证,而不要自己比较标签字节 —— 它才是常量时间路径(§9 规则 5)。
+> - ⚠️ **不该做:** 对 `HmacSm3` 调用 `Reset::reset` —— 它会**直接 panic**,而且是有意为之。该类型不保留密钥副本,重置没有确定含义;上游宁可显式 panic,也不愿留下一个悄悄做错事的空实现。以 `Mac + Reset` 为约束的泛型代码,是 HMAC-SM3 唯一不能互换的地方。
+> - ⚠️ **不该做:** 用 `KeyInit::new` 构造:它接收 64 字节的 `Key<HmacSm3>`,普通的 20 或 32 字节密钥根本传不进去。
+> - ✅ **该做:** 用 `Mac::verify_slice` 验证,而不要自己比较标签字节 —— 它才是恒定时间路径(§9 规则 5)。
 > - ℹ️ `HmacSm3` 没有实现 `FixedOutputReset`,因此它上面不存在 `Mac::finalize_reset`。`Sm3` 两者都有;这两个类型在这一点上并不对称。
 
 **对应示例:** `cargo run --features digest-traits --example sm3_digest_traits`
@@ -473,7 +491,10 @@ CBC 和 CTR 无法检测篡改 —— 攻击者可以翻转比特,而解密不�
 
 **对应示例:** `cargo run --example sm4_cbc_ctr`
 
+<a id="rustcrypto-cipher-traits"></a>
 ### RustCrypto `cipher` trait 形态
+
+> 📎 **可选(生态互通):** 除非你需要 `BlockCipherEncrypt` 约束,否则跳过。
 
 `Sm4Cipher` 实现了 RustCrypto [`cipher`](https://docs.rs/cipher) 0.5 的分组密码
 trait,因此以 `BlockCipherEncrypt` 为约束的通用构造可以直接接纳 SM4,与 AES
@@ -500,8 +521,8 @@ let mut block = Array::from(plaintext_block);
 <Sm4Cipher as BlockCipherEncrypt>::encrypt_block(&cipher, &mut block);
 ```
 
-> - ⚠️ **Don't** 用这层接口加密真实数据。对多个分组调用 `encrypt_blocks` **就是 ECB**:相同的明文分组会得到相同的密文分组,从而泄漏结构。请使用 SM4-GCM([§7](#7-sm4-authenticated-encryption-gcm-and-ccm)),或按上文所述为 CBC / CTR 配一个 MAC。
-> - ✅ **Do** 用这组 trait 把 SM4 交给期望一个分组密码的通用构造 —— 这正是它们存在的意义。
+> - ⚠️ **不该做:** 用这层接口加密真实数据。对多个分组调用 `encrypt_blocks` **就是 ECB**:相同的明文分组会得到相同的密文分组,从而泄漏结构。请使用 SM4-GCM([§7](#7-sm4-authenticated-encryption-gcm-and-ccm)),或按上文所述为 CBC / CTR 配一个 MAC。
+> - ✅ **该做:** 用这组 trait 把 SM4 交给期望一个分组密码的通用构造 —— 这正是它们存在的意义。
 > - ℹ️ 后端声明的 `ParBlocksSize = U1`,因此即便上游开启了 `sm4-bitsliced-simd`,trait 的 `encrypt_blocks` 也拿不到 SIMD 批处理。批处理只存在于固有方法 `Sm4Cipher::encrypt_blocks` 上。
 > - ℹ️ `cipher` 0.5 尚未到 1.0,因此 `cipher` 的破坏性发布**不在** `gmcrypto-core` 的 SemVer 保证范围内,需要你自己升级。
 
@@ -547,6 +568,8 @@ let pt = mode_gcm::decrypt(&key, &nonce, aad, &ciphertext, &tag).expect("auth ok
 
 <a id="rustcrypto-aead-traits-v111"></a>
 ### RustCrypto `aead` trait 形态(v1.11)
+
+> 📎 **可选(生态互通):** 除非你需要 `Aead` / `AeadInOut` 约束,否则跳过。
 
 自 1.11 起,同样这两个密码算法也以 RustCrypto [`aead`](https://docs.rs/aead) 0.6
 类型的形态提供:已经以 `AeadInOut`(或通过一揽子实现得到的 `Aead`)为约束的
