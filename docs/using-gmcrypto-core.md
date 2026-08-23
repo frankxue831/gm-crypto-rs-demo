@@ -19,6 +19,8 @@ nonces, weak KDF settings, unauthenticated ciphertext, leaked key material.
 - **Correct usage** — the key calls, with a runnable snippet.
 - **Do / Don't** — the rules that actually matter in production.
 - **Matching example** — the file under `examples/` and the command to run it.
+- **Optional: ecosystem fit** — some sections end with a RustCrypto-trait H3.
+  Skip it unless you need a generic bound (`D: Digest`, `Mac`, `BlockCipherEncrypt`, `Aead`).
 
 > ⚠️ **Every key, IV, nonce, salt, and password in this demo (and in this guide)
 > is a fixed _public fixture_.** They exist to make snippets reproducible. Never
@@ -57,6 +59,10 @@ Use this as a guided path, not a loose collection of notes. Start with setup,
 then move from primitives → keys / signatures / encryption → symmetric modes →
 final review.
 
+Two tracks: the numbered sections are **correct SDK usage**. Optional
+RustCrypto-trait H3s at the end of §1, §2, §6, and §7 are **ecosystem fit** —
+skip them unless you already write generic code against those traits.
+
 | Stage | Read | What you get |
 |---|---|---|
 | Foundation | [§0](#0-getting-started-setup-rng-and-helpers) | Dependency setup, OS RNG, shared helpers |
@@ -69,12 +75,16 @@ final review.
 
 0. [Getting started: setup, RNG, and helpers](#0-getting-started-setup-rng-and-helpers)
 1. [SM3 hashing](#1-sm3-hashing)
+   - [RustCrypto `digest` traits (optional)](#rustcrypto-digest-traits)
 2. [Message authentication and key derivation (HMAC-SM3, PBKDF2)](#2-message-authentication-and-key-derivation-hmac-sm3-pbkdf2)
+   - [RustCrypto `digest::Mac` (optional)](#rustcrypto-digestmac-trait)
 3. [SM2 digital signatures](#3-sm2-digital-signatures)
 4. [SM2 public-key encryption](#4-sm2-public-key-encryption)
 5. [SM2 key management and serialization](#5-sm2-key-management-and-serialization)
 6. [SM4 symmetric encryption: CBC and CTR](#6-sm4-symmetric-encryption-cbc-and-ctr)
+   - [RustCrypto `cipher` traits (optional)](#rustcrypto-cipher-traits)
 7. [SM4 authenticated encryption: GCM and CCM](#7-sm4-authenticated-encryption-gcm-and-ccm)
+   - [RustCrypto `aead` traits (optional)](#rustcrypto-aead-traits-v111)
 8. [SM4-XTS disk and sector encryption](#8-sm4-xts-disk-and-sector-encryption)
 9. [Doing crypto correctly (cross-cutting review)](#9-doing-crypto-correctly-cross-cutting-review)
 
@@ -92,7 +102,7 @@ it — never a path / workspace / git dependency:
 
 ```toml
 [dependencies]
-gmcrypto-core = "=1.11.0"
+gmcrypto-core = "=1.11.2"
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 rand_core = "0.10.1"
 ```
@@ -101,12 +111,16 @@ rand_core = "0.10.1"
 > Apache-2.0` (it was `Apache-2.0` only through 1.9.0), and the published
 > archive now carries both licence texts — earlier archives carried none.
 
-Optional features turn on the gated capabilities (the default build stays lean):
+Optional features turn on the gated capabilities (the default build stays lean).
+The fence below is a capability map — comments and all — not a dump of this
+demo's `Cargo.toml` (that file is alphabetical and has no comments):
 
 ```toml
 [features]
 sm4-aead         = ["gmcrypto-core/sm4-aead"]          # SM4-GCM / SM4-CCM  (guide §7)
 aead-traits      = ["sm4-aead", "gmcrypto-core/aead-traits", "dep:aead"]  # RustCrypto aead 0.6 (guide §7)
+digest-traits    = ["gmcrypto-core/digest-traits", "dep:digest"]  # RustCrypto digest 0.11 (guide §1, §2)
+cipher-traits    = ["gmcrypto-core/cipher-traits", "dep:cipher"]  # RustCrypto cipher 0.5  (guide §6)
 sm4-xts          = ["gmcrypto-core/sm4-xts"]           # SM4-XTS            (guide §8)
 sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]  # SM2 key exchange   (README cookbook)
 tlcp             = ["gmcrypto-core/tlcp"]              # TLCP key schedule  (README cookbook)
@@ -194,6 +208,48 @@ let digest = hasher.finalize(); // identical to sm3::hash(b"abc")
 
 **Matching example:** `cargo run --example sm3_hashing`
 
+<a id="rustcrypto-digest-traits"></a>
+### RustCrypto `digest` traits
+
+> 📎 **Optional (ecosystem fit):** skip unless you need a `D: Digest` bound.
+
+`Sm3` also implements the RustCrypto [`digest`](https://docs.rs/digest) 0.11
+traits, so code already written against a `D: Digest` bound accepts SM3 next to
+SHA-2 with no glue.
+
+> 🧩 **Feature-gated, and `digest` is a companion crate:** `gmcrypto-core` does
+> not re-export it, so you name it yourself.
+
+```toml
+[dependencies]
+gmcrypto-core = { version = "=1.11.2", features = ["digest-traits"] }
+digest = { version = "0.11.3", default-features = false, features = ["mac"] }
+```
+
+`mac` is not decorative: `digest::Mac` — all of HMAC-SM3's trait surface
+([§2](#2-message-authentication-and-key-derivation-hmac-sm3-pbkdf2)) — sits
+behind it, and it is **not** one of `digest`'s default features.
+
+```rust
+use digest::Digest;
+use gmcrypto_core::sm3::Sm3;
+
+// Name the trait. `Sm3` has inherent `update` / `finalize` too, and inherent
+// methods win: `hasher.finalize()` returns [u8; 32], the trait one Output<Sm3>.
+let digest = <Sm3 as Digest>::digest(b"abc");
+
+let mut hasher = <Sm3 as Digest>::new();
+Digest::update(&mut hasher, b"a");
+Digest::update(&mut hasher, b"bc");
+assert_eq!(<Sm3 as Digest>::finalize(hasher), digest);
+```
+
+> - ✅ **Do** reach for the traits when you need ecosystem fit — one `D: Digest` bound, many hash functions.
+> - ⚠️ **Don't** write `hasher.finalize()` and assume you called the trait. The inherent method wins and the two return different types, so name the trait — here UFCS is a requirement, not a style choice.
+> - ℹ️ `digest` 0.11 is pre-1.0, so a breaking `digest` release is **not** covered by `gmcrypto-core`'s SemVer. You bump it yourself.
+
+**Matching example:** `cargo run --features digest-traits --example sm3_digest_traits`
+
 ---
 
 ## 2. Message authentication and key derivation (HMAC-SM3, PBKDF2)
@@ -244,6 +300,36 @@ Same password + same salt always derive the same key; a different salt diverges.
 > - ⚠️ **Don't** use a plain SM3 hash for password storage.
 
 **Matching example:** `cargo run --example hmac_and_kdf`
+
+<a id="rustcrypto-digestmac-trait"></a>
+### RustCrypto `digest::Mac` trait
+
+> 📎 **Optional (ecosystem fit):** skip unless you need a `digest::Mac` bound.
+
+`HmacSm3` implements `digest::Mac` behind the same `digest-traits` flag and the
+same companion-crate dependency as [§1](#1-sm3-hashing). Two things stop it from
+being a silent drop-in, and both surface only in generic code.
+
+```rust
+use digest::{KeyInit, Mac};
+use gmcrypto_core::hmac::HmacSm3;
+
+// `KeySize` is 64 (the SM3 block size), but RFC 2104 keys are any length, so
+// `new_from_slice` — not `KeyInit::new` — is the constructor to reach for.
+let mac = <HmacSm3 as KeyInit>::new_from_slice(key)?;
+let tag = Mac::finalize(Mac::chain_update(mac, msg)).into_bytes();
+
+// verify_slice is the constant-time comparison. Never `==` the tag bytes.
+let checked = <HmacSm3 as KeyInit>::new_from_slice(key)?;
+Mac::verify_slice(Mac::chain_update(checked, msg), &tag)?;
+```
+
+> - ⚠️ **Don't** call `Reset::reset` on an `HmacSm3` — it **panics**, deliberately. The type keeps no copy of the key, so a reset has no defined meaning, and upstream chose a loud panic over a silently wrong no-op. Generic code bounded on `Mac + Reset` is the one place HMAC-SM3 is not interchangeable.
+> - ⚠️ **Don't** construct through `KeyInit::new`: it takes a 64-byte `Key<HmacSm3>`, so an ordinary 20- or 32-byte key cannot be passed to it at all.
+> - ✅ **Do** verify with `Mac::verify_slice` rather than comparing tag bytes yourself — it is the constant-time path (§9 rule 5).
+> - ℹ️ `HmacSm3` implements no `FixedOutputReset`, so `Mac::finalize_reset` does not exist on it. `Sm3` has both; the two types are not symmetric here.
+
+**Matching example:** `cargo run --features digest-traits --example sm3_digest_traits`
 
 ---
 
@@ -397,6 +483,43 @@ won't complain.
 
 **Matching example:** `cargo run --example sm4_cbc_ctr`
 
+<a id="rustcrypto-cipher-traits"></a>
+### RustCrypto `cipher` traits
+
+> 📎 **Optional (ecosystem fit):** skip unless you need a `BlockCipherEncrypt` bound.
+
+`Sm4Cipher` implements the RustCrypto [`cipher`](https://docs.rs/cipher) 0.5
+block-cipher traits, so a generic construction bounded on `BlockCipherEncrypt`
+takes SM4 next to AES.
+
+> 🧩 **Feature-gated, and `cipher` is a companion crate:** `gmcrypto-core` does
+> not re-export it, so you name it yourself.
+
+```toml
+[dependencies]
+gmcrypto-core = { version = "=1.11.2", features = ["cipher-traits"] }
+cipher = { version = "0.5.2", default-features = false }
+```
+
+```rust
+use cipher::array::Array;
+use cipher::{BlockCipherEncrypt, KeyInit};
+use gmcrypto_core::sm4::Sm4Cipher;
+
+// Name the trait: the inherent `Sm4Cipher::new` takes &[u8; 16] and the
+// inherent `encrypt_block` takes &mut [u8; 16], not the trait's Array type.
+let cipher = <Sm4Cipher as KeyInit>::new_from_slice(&key)?;
+let mut block = Array::from(plaintext_block);
+<Sm4Cipher as BlockCipherEncrypt>::encrypt_block(&cipher, &mut block);
+```
+
+> - ⚠️ **Don't** encrypt real data through this surface. `encrypt_blocks` over more than one block **is ECB**: equal plaintext blocks give equal ciphertext blocks, which leaks structure. Use SM4-GCM ([§7](#7-sm4-authenticated-encryption-gcm-and-ccm)), or CBC / CTR with a MAC as above.
+> - ✅ **Do** reach for the traits to hand SM4 to a generic construction that expects a block cipher — that is the whole purpose.
+> - ℹ️ The backend declares `ParBlocksSize = U1`, so the trait's `encrypt_blocks` gets no SIMD fan-out even under upstream's `sm4-bitsliced-simd`. Batching lives on the inherent `Sm4Cipher::encrypt_blocks`.
+> - ℹ️ `cipher` 0.5 is pre-1.0, so a breaking `cipher` release is **not** covered by `gmcrypto-core`'s SemVer. You bump it yourself.
+
+**Matching example:** `cargo run --features cipher-traits --example sm4_cipher_traits`
+
 ---
 
 ## 7. SM4 authenticated encryption: GCM and CCM
@@ -405,7 +528,7 @@ won't complain.
 (AEAD)**: it encrypts *and* authenticates in one step, so tampering is detected on
 decrypt. This should be your default for symmetric encryption.
 
-> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=1.11.0", features = ["sm4-aead"] }`.
+> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=1.11.2", features = ["sm4-aead"] }`.
 > SM4-CCM lives in the same feature via `sm4::mode_ccm`.
 
 ### Correct usage
@@ -433,7 +556,10 @@ headers / metadata that must be bound to the ciphertext but can travel in the cl
 
 **See also:** `cargo run --features sm4-aead --example sm4_ccm` for SM4-CCM, and `cargo run --features sm4-aead --example sm4_streaming` for chunked SM4-GCM (Sm4GcmEncryptor / Sm4GcmDecryptor).
 
+<a id="rustcrypto-aead-traits-v111"></a>
 ### RustCrypto `aead` traits (v1.11)
+
+> 📎 **Optional (ecosystem fit):** skip unless you need an `Aead` / `AeadInOut` bound.
 
 Since 1.11 the same two ciphers are also available as RustCrypto
 [`aead`](https://docs.rs/aead) 0.6 types, so generic code already bounded on
@@ -445,7 +571,7 @@ and ChaCha20Poly1305 with no glue.
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.11.0", features = ["aead-traits"] }
+gmcrypto-core = { version = "=1.11.2", features = ["aead-traits"] }
 aead = { version = "0.6.1", default-features = false, features = ["alloc"] }
 ```
 

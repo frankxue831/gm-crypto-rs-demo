@@ -19,6 +19,8 @@ cargo run --features sm4-aead --example sm4_aead      # gated: SM4-GCM (single-s
 cargo run --features sm4-aead --example sm4_ccm       # gated: SM4-CCM (12+16 / 13+8 nonce-tag shapes)
 cargo run --features sm4-aead --example sm4_streaming # gated: SM4-GCM streaming (Sm4GcmEncryptor / Decryptor)
 cargo run --features aead-traits --example sm4_aead_traits  # gated: RustCrypto aead 0.6 (Sm4Gcm / Sm4Ccm)
+cargo run --features digest-traits --example sm3_digest_traits    # gated: RustCrypto digest 0.11 (Sm3 / HmacSm3)
+cargo run --features cipher-traits --example sm4_cipher_traits    # gated: RustCrypto cipher 0.5 (Sm4Cipher)
 cargo run --features sm2-key-exchange --example sm2_key_exchange  # gated: SM2 KX (GM/T 0003.3; confirmed + no-confirmation)
 cargo run --features tlcp --example tlcp_key_schedule # gated: TLCP key schedule (GB/T 38636 PRF over HMAC-SM3)
 cargo run --features tlcp --example tlcp_record       # gated: TLCP record protect/deprotect (SM4-CBC; +GCM under sm4-aead)
@@ -33,29 +35,38 @@ cargo run -- tour                                     # CLI walkthrough of all p
   `DEMO_PBKDF2_{PASSWORD,SALT,ITER,LEN}` (RFC 6070 inputs). CLI + examples both import these.
 - `src/main.rs` — the CLI (`hash`/`sign`/`verify`/`encrypt`/`decrypt`/`sm4-*`/
   `hmac`/`pbkdf2`/`key-info`/`tour`).
-- `examples/` — 14 self-verifying cookbook examples; CI builds and runs them all.
+- `examples/` — 16 self-verifying cookbook examples; CI builds and runs them all.
   Default-feature: `sm3_hashing`, `hmac_and_kdf`, `sm2_sign_verify`, `sm2_encrypt_decrypt`,
   `sm2_key_encoding`, `sm4_cbc_ctr`. Gated: `sm4_aead`, `sm4_ccm`, `sm4_streaming` (`sm4-aead`);
-  `sm4_aead_traits` (`aead-traits`); `sm2_key_exchange` (`sm2-key-exchange`); `tlcp_key_schedule`,
+  `sm4_aead_traits` (`aead-traits`); `sm3_digest_traits` (`digest-traits`); `sm4_cipher_traits`
+  (`cipher-traits`); `sm2_key_exchange` (`sm2-key-exchange`); `tlcp_key_schedule`,
   `tlcp_record` (`tlcp`); `sm4_xts` (`sm4-xts`).
 
 ## Gotchas
-- **Keep the pin exact:** `gmcrypto-core = "=1.11.0"` — never a path/workspace/git
+- **Keep the pin exact:** `gmcrypto-core = "=1.11.2"` — never a path/workspace/git
   dep (it would defeat the published-crate smoke test).
 - **Gated examples** need their feature flag (`sm4-aead` for `sm4_aead`/`sm4_ccm`/`sm4_streaming`,
-  `aead-traits` for `sm4_aead_traits`, `sm2-key-exchange` for `sm2_key_exchange`, `tlcp` for
+  `aead-traits` for `sm4_aead_traits`, `digest-traits` for `sm3_digest_traits`, `cipher-traits` for
+  `sm4_cipher_traits`, `sm2-key-exchange` for `sm2_key_exchange`, `tlcp` for
   `tlcp_key_schedule`/`tlcp_record`, `sm4-xts` for
   `sm4_xts`); the default build stays lean (no `gmcrypto-simd`). Lint with `--all-features` to cover them.
   `tlcp_record`'s SM4-GCM section additionally needs `sm4-aead` (a `#[cfg]` block); it's compiled under
   `--all-features` clippy and the example runs the CBC path under bare `tlcp`.
-- **`aead-traits` needs a companion crate:** gmcrypto-core does *not* re-export `aead`, so the demo
-  declares `aead = { version = "0.6.1", default-features = false, features = ["alloc"], optional = true }`
-  itself — the only dependency here that is neither `gmcrypto-core` nor an RNG crate. `alloc` is
-  load-bearing: the `Vec`-returning `aead::Aead` and `impl Buffer for Vec<u8>` both sit behind it, and it
-  is **not** one of `aead`'s defaults (those are `["rand_core"]`). Verify with
-  `cargo tree -e features -i aead --features aead-traits`; `cargo tree` on the default build must show no
-  `aead` at all. Note `Sm4Gcm`/`Sm4Ccm` have no inherent methods, so UFCS is a legibility choice, not a
-  requirement — don't document it as one.
+- **The three trait fits each need a companion crate:** gmcrypto-core re-exports none of `aead`,
+  `digest`, or `cipher`, so the demo declares them itself — the only dependencies here that are
+  neither `gmcrypto-core` nor an RNG crate. Two of the three feature selections are load-bearing
+  rather than tidiness, and both were checked rather than assumed:
+  `aead`'s `alloc` (the `Vec`-returning `aead::Aead` and `impl Buffer for Vec<u8>` sit behind it; **not**
+  a default — those are `["rand_core"]`) and `digest`'s `mac` (all of `HmacSm3`'s trait surface sits
+  behind it; **not** a default — that is `["block-api"]`). `cipher` declares no `default` feature at all,
+  so its `default-features = false` is documentation. Verify with
+  `cargo tree -e features -i <crate> --features <flag>`; `cargo tree` on the default build must show
+  none of the three.
+- **UFCS: required for `digest`/`cipher`, optional for `aead`.** `Sm3`, `HmacSm3` and `Sm4Cipher` carry
+  inherent `new`/`update`/`finalize`/`encrypt_block` methods that win over the trait ones *and* differ in
+  type (`[u8; 32]` vs `Output<Sm3>`; `&[u8; 16]` vs `&Array<u8, U16>`), so naming the trait is a
+  requirement there. `Sm4Gcm`/`Sm4Ccm` have no inherent methods, so for `aead-traits` it is a legibility
+  choice — don't document that one as a requirement.
 - **All sample keys/IVs/passwords are public fixtures** — never production-safe.
 - **No randomness in exact-output assertions** — assert round-trips/validity, not
   exact signatures/ciphertexts.
@@ -74,7 +85,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
   relevant assertions in `if cfg!(feature = "...") { … } else { … }` so the same test passes
   under both default and feature-gated (`--all-features`) builds.
 - **CI** runs `cargo fmt --check`, clippy with `--all-features`, `cargo test` (default),
-  `cargo test --all-features`, all 14 examples (gated ones each under their minimal
+  `cargo test --all-features`, all 16 examples (gated ones each under their minimal)
   feature), both `check-doc-sync.sh` invocations, `check-example-sync.sh` (every
   `examples/*.rs` must appear in ci.yml, both READMEs, and CLAUDE.md), and `gitleaks detect`.
 
