@@ -14,12 +14,27 @@ publish = false
 # Vec-returning `Aead` and `Buffer for Vec<u8>` are both behind it) and is NOT
 # one of `aead`'s defaults — those are `["rand_core"]`, which we don't need.
 aead = { version = "0.6.1", default-features = false, features = ["alloc"], optional = true }
+# `cipher-traits` needs this companion crate, on the same terms. cipher 0.5
+# declares no `default` feature at all, so `default-features = false` trims
+# nothing — it is kept for symmetry with the two lines around it, and so a
+# future default arriving upstream cannot silently widen the graph.
+cipher = { version = "0.5.2", default-features = false, optional = true }
+# `digest-traits` needs this companion crate, on the same terms. `mac` is
+# load-bearing (`digest::Mac`, and so all of `HmacSm3`'s trait surface, is
+# behind it) and is NOT one of `digest`'s defaults — those are `["block-api"]`,
+# which pulls `block-buffer` for a re-exported API this demo never names.
+digest = { version = "0.11.3", default-features = false, features = ["mac"], optional = true }
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 gmcrypto-core = "=1.11.2"
 rand_core = "0.10.1"
 
 [features]
 aead-traits = ["sm4-aead", "gmcrypto-core/aead-traits", "dep:aead"]
+# Two flags, not one: upstream splits `digest-traits` / `cipher-traits` so a
+# caller needing only one half doesn't pay for both. Folding them together here
+# would misrepresent that.
+cipher-traits = ["gmcrypto-core/cipher-traits", "dep:cipher"]
+digest-traits = ["gmcrypto-core/digest-traits", "dep:digest"]
 sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]
 sm4-aead = ["gmcrypto-core/sm4-aead"]
 sm4-xts = ["gmcrypto-core/sm4-xts"]
@@ -38,6 +53,10 @@ name = "tlcp_record"
 required-features = ["tlcp"]
 
 [[example]]
+name = "sm3_digest_traits"
+required-features = ["digest-traits"]
+
+[[example]]
 name = "sm4_aead"
 required-features = ["sm4-aead"]
 
@@ -48,6 +67,10 @@ required-features = ["aead-traits"]
 [[example]]
 name = "sm4_ccm"
 required-features = ["sm4-aead"]
+
+[[example]]
+name = "sm4_cipher_traits"
+required-features = ["cipher-traits"]
 
 [[example]]
 name = "sm4_streaming"

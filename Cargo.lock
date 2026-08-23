@@ -37,6 +37,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "cipher"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8cf2a2c93cd704877c0858356ed03480ff301ee950b43f1cbe4573b088bfa6c"
+dependencies = [
+ "crypto-common",
+ "inout",
+]
+
+[[package]]
 name = "cmov"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -91,6 +101,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "digest"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
+dependencies = [
+ "crypto-common",
+ "ctutils",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -121,6 +141,8 @@ name = "gm-crypto-rs-demo"
 version = "0.1.0"
 dependencies = [
  "aead",
+ "cipher",
+ "digest",
  "getrandom",
  "gmcrypto-core",
  "rand_core",
@@ -133,7 +155,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b9f850ddf82a1280dfbc8b9ea13768c1dd2fdb97826d4302712c30ae121f7ef"
 dependencies = [
  "aead",
+ "cipher",
  "crypto-bigint",
+ "digest",
  "gmcrypto-simd",
  "rand_core",
  "spin",
