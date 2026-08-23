@@ -85,7 +85,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
   relevant assertions in `if cfg!(feature = "...") { … } else { … }` so the same test passes
   under both default and feature-gated (`--all-features`) builds.
 - **CI** runs `cargo fmt --check`, clippy with `--all-features`, `cargo test` (default),
-  `cargo test --all-features`, all 14 examples (gated ones each under their minimal
+  `cargo test --all-features`, all 16 examples (gated ones each under their minimal)
   feature), both `check-doc-sync.sh` invocations, `check-example-sync.sh` (every
   `examples/*.rs` must appear in ci.yml, both READMEs, and CLAUDE.md), and `gitleaks detect`.
 
