@@ -53,5 +53,6 @@ fn main() {
 
     // SM4-CCM is demonstrated in examples/sm4_ccm.rs (same sm4-aead feature).
     // Streaming SM4-GCM is demonstrated in examples/sm4_streaming.rs.
+    // Streaming SM4-CCM is demonstrated in examples/sm4_ccm_streaming.rs.
     println!("\nOK");
 }

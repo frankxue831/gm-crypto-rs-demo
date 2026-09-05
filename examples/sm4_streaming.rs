@@ -65,5 +65,7 @@ fn main() {
     );
     println!("  tampered tag is rejected on finalize_verify");
 
+    // Length-committed streaming SM4-CCM is demonstrated in examples/sm4_ccm_streaming.rs.
+
     println!("\nOK");
 }

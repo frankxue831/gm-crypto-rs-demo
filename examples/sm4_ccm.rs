@@ -91,5 +91,7 @@ fn main() {
     );
     println!("  tampered nonce is rejected");
 
+    // Length-committed streaming SM4-CCM is demonstrated in examples/sm4_ccm_streaming.rs.
+
     println!("\nOK");
 }
