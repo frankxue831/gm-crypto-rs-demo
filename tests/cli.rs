@@ -185,6 +185,9 @@ fn tour_prints_non_flaky_section_results() {
     assert!(out.contains("PKCS#8 / encrypted PKCS#8:  cargo run --example sm2_key_encoding"));
     assert!(out
         .contains("SM4-GCM (AEAD):             cargo run --features sm4-aead --example sm4_aead"));
+    assert!(out.contains(
+        "SM4-CCM streaming:          cargo run --features sm4-aead --example sm4_ccm_streaming"
+    ));
     assert!(
         out.contains("SM4-XTS:                    cargo run --features sm4-xts  --example sm4_xts")
     );

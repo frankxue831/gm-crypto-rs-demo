@@ -25,6 +25,7 @@ jobs:
         run: |
           cargo run --quiet --features sm4-aead --example sm4_aead
           cargo run --quiet --features sm4-aead --example sm4_ccm
+          cargo run --quiet --features sm4-aead --example sm4_ccm_streaming
           cargo run --quiet --features sm4-aead --example sm4_streaming
           cargo run --quiet --features aead-traits --example sm4_aead_traits
           cargo run --quiet --features digest-traits --example sm3_digest_traits

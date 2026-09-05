@@ -6,7 +6,7 @@
 //! `Sm4Gcm` / `Sm4Ccm` are thin wrappers that add no cryptography, so this
 //! example's job is to *prove* that and then price the trade — it does not
 //! re-teach GCM or CCM (see `sm4_aead` / `sm4_ccm` for the inherent API and
-//! `sm4_streaming` for chunked input). `aead` is a companion crate you declare
+//! `sm4_streaming` / `sm4_ccm_streaming` for chunked input). `aead` is a companion crate you declare
 //! yourself; gmcrypto-core does not re-export it.
 
 use aead::array::typenum::Unsigned;

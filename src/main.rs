@@ -323,6 +323,9 @@ fn print_tour() -> Result<ExitCode, String> {
     println!("== What else? ==");
     println!("PKCS#8 / encrypted PKCS#8:  cargo run --example sm2_key_encoding");
     println!("SM4-GCM (AEAD):             cargo run --features sm4-aead --example sm4_aead");
+    println!(
+        "SM4-CCM streaming:          cargo run --features sm4-aead --example sm4_ccm_streaming"
+    );
     println!("SM4-XTS:                    cargo run --features sm4-xts  --example sm4_xts");
     println!("Production safety:          docs/using-gmcrypto-core.md \u{00a7}9");
 

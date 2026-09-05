@@ -84,6 +84,7 @@ skip them unless you already write generic code against those traits.
 6. [SM4 symmetric encryption: CBC and CTR](#6-sm4-symmetric-encryption-cbc-and-ctr)
    - [RustCrypto `cipher` traits (optional)](#rustcrypto-cipher-traits)
 7. [SM4 authenticated encryption: GCM and CCM](#7-sm4-authenticated-encryption-gcm-and-ccm)
+   - [Length-committed streaming CCM (v1.12)](#length-committed-streaming-ccm-v112)
    - [RustCrypto `aead` traits (optional)](#rustcrypto-aead-traits-v111)
 8. [SM4-XTS disk and sector encryption](#8-sm4-xts-disk-and-sector-encryption)
 9. [Doing crypto correctly (cross-cutting review)](#9-doing-crypto-correctly-cross-cutting-review)
@@ -102,7 +103,7 @@ it — never a path / workspace / git dependency:
 
 ```toml
 [dependencies]
-gmcrypto-core = "=1.11.2"
+gmcrypto-core = "=1.13.0"
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 rand_core = "0.10.1"
 ```
@@ -222,7 +223,7 @@ SHA-2 with no glue.
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.11.2", features = ["digest-traits"] }
+gmcrypto-core = { version = "=1.13.0", features = ["digest-traits"] }
 digest = { version = "0.11.3", default-features = false, features = ["mac"] }
 ```
 
@@ -497,7 +498,7 @@ takes SM4 next to AES.
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.11.2", features = ["cipher-traits"] }
+gmcrypto-core = { version = "=1.13.0", features = ["cipher-traits"] }
 cipher = { version = "0.5.2", default-features = false }
 ```
 
@@ -528,7 +529,7 @@ let mut block = Array::from(plaintext_block);
 (AEAD)**: it encrypts *and* authenticates in one step, so tampering is detected on
 decrypt. This should be your default for symmetric encryption.
 
-> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=1.11.2", features = ["sm4-aead"] }`.
+> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=1.13.0", features = ["sm4-aead"] }`.
 > SM4-CCM lives in the same feature via `sm4::mode_ccm`.
 
 ### Correct usage
@@ -554,7 +555,41 @@ headers / metadata that must be bound to the ciphertext but can travel in the cl
 
 **Matching example:** `cargo run --features sm4-aead --example sm4_aead`
 
-**See also:** `cargo run --features sm4-aead --example sm4_ccm` for SM4-CCM, and `cargo run --features sm4-aead --example sm4_streaming` for chunked SM4-GCM (Sm4GcmEncryptor / Sm4GcmDecryptor).
+**See also:** `cargo run --features sm4-aead --example sm4_ccm` for SM4-CCM, `cargo run --features sm4-aead --example sm4_streaming` for chunked SM4-GCM (Sm4GcmEncryptor / Sm4GcmDecryptor), and `cargo run --features sm4-aead --example sm4_ccm_streaming` for length-committed streaming SM4-CCM (Sm4CcmEncryptor / Sm4CcmDecryptor).
+
+<a id="length-committed-streaming-ccm-v112"></a>
+### Length-committed streaming CCM (v1.12)
+
+Since 1.12 SM4-CCM can encrypt in chunks **if** the caller commits to the exact
+plaintext length at construction — CCM encodes that length in the first CBC-MAC
+block `B0`. Each `update` then emits that chunk's ciphertext immediately
+(`O(chunk)` memory). `finalize` returns `None` when the stream was over-fed
+(poisoned) or under-fed: a partial stream is never tag-authenticated. That is
+deliberately stricter than `Sm4GcmEncryptor`, which still returns a tag after
+poison.
+
+`Sm4CcmDecryptor` matches the `Sm4GcmDecryptor` shape: input-incremental,
+output-buffered, commit-on-verify. It is **not** output-streaming. Plaintext is
+released only from `finalize_verify`.
+
+A `(key, nonce)` pair plus a **different declared length** is still nonce reuse
+(the length is part of `B0`). v1.13 additionally zeroizes the SM4 streaming
+family on drop; there is no signature change.
+
+```rust
+use gmcrypto_core::sm4::Sm4CcmEncryptor;
+
+// CCM encodes plaintext_len in B0: commit it at construction.
+let mut enc = Sm4CcmEncryptor::new(&key, &nonce, aad, plaintext.len(), 16)
+    .expect("valid nonce and tag length");
+let mut ct = Vec::new();
+for chunk in plaintext.chunks(16) {
+    ct.extend_from_slice(&enc.update(chunk).expect("not over-fed"));
+}
+let tag = enc.finalize().expect("not under-fed");
+```
+
+**Matching example:** `cargo run --features sm4-aead --example sm4_ccm_streaming`
 
 <a id="rustcrypto-aead-traits-v111"></a>
 ### RustCrypto `aead` traits (v1.11)
@@ -571,7 +606,7 @@ and ChaCha20Poly1305 with no glue.
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.11.2", features = ["aead-traits"] }
+gmcrypto-core = { version = "=1.13.0", features = ["aead-traits"] }
 aead = { version = "0.6.1", default-features = false, features = ["alloc"] }
 ```
 

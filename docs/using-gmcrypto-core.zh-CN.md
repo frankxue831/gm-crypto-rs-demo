@@ -84,6 +84,7 @@ RustCrypto trait H3 是 **生态互通** —— 除非你已经在写针对这�
 6. [SM4 对称加密:CBC 与 CTR](#6-sm4-symmetric-encryption-cbc-and-ctr)
    - [RustCrypto `cipher` trait 形态(可选)](#rustcrypto-cipher-traits)
 7. [SM4 认证加密:GCM 与 CCM](#7-sm4-authenticated-encryption-gcm-and-ccm)
+   - [长度提交的流式 CCM(v1.12)](#length-committed-streaming-ccm-v112)
    - [RustCrypto `aead` trait 形态(可选)](#rustcrypto-aead-traits-v111)
 8. [SM4-XTS 磁盘与扇区加密](#8-sm4-xts-disk-and-sector-encryption)
 9. [正确地做密码学(跨章节回顾)](#9-doing-crypto-correctly-cross-cutting-review)
@@ -104,7 +105,7 @@ RustCrypto trait H3 是 **生态互通** —— 除非你已经在写针对这�
 
 ```toml
 [dependencies]
-gmcrypto-core = "=1.11.2"
+gmcrypto-core = "=1.13.0"
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 rand_core = "0.10.1"
 ```
@@ -227,7 +228,7 @@ trait,因此已经按 `D: Digest` 约束写好的代码可以直接接纳 SM3,�
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.11.2", features = ["digest-traits"] }
+gmcrypto-core = { version = "=1.13.0", features = ["digest-traits"] }
 digest = { version = "0.11.3", default-features = false, features = ["mac"] }
 ```
 
@@ -505,7 +506,7 @@ trait,因此以 `BlockCipherEncrypt` 为约束的通用构造可以直接接纳 
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.11.2", features = ["cipher-traits"] }
+gmcrypto-core = { version = "=1.13.0", features = ["cipher-traits"] }
 cipher = { version = "0.5.2", default-features = false }
 ```
 
@@ -536,7 +537,7 @@ let mut block = Array::from(plaintext_block);
 **它是什么:** SM4-GCM 是**带关联数据的认证加密(AEAD)**:它在一步内同时
 完成加密*与*认证,因此解密时能检测出篡改。这应是你做对称加密时的默认选择。
 
-> 🧩 **需要开启特性:** `gmcrypto-core = { version = "=1.11.2", features = ["sm4-aead"] }`。
+> 🧩 **需要开启特性:** `gmcrypto-core = { version = "=1.13.0", features = ["sm4-aead"] }`。
 > SM4-CCM 位于同一特性之下,通过 `sm4::mode_ccm` 使用。
 
 <a id="correct-usage-3"></a>
@@ -564,7 +565,37 @@ let pt = mode_gcm::decrypt(&key, &nonce, aad, &ciphertext, &tag).expect("auth ok
 
 **对应示例:** `cargo run --features sm4-aead --example sm4_aead`
 
-**另见:** `cargo run --features sm4-aead --example sm4_ccm`(SM4-CCM),以及 `cargo run --features sm4-aead --example sm4_streaming`(分块流式 SM4-GCM,使用 Sm4GcmEncryptor / Sm4GcmDecryptor)。
+**另见:** `cargo run --features sm4-aead --example sm4_ccm`(SM4-CCM),`cargo run --features sm4-aead --example sm4_streaming`(分块流式 SM4-GCM,使用 Sm4GcmEncryptor / Sm4GcmDecryptor),以及 `cargo run --features sm4-aead --example sm4_ccm_streaming`(长度提交的流式 SM4-CCM,使用 Sm4CcmEncryptor / Sm4CcmDecryptor)。
+
+<a id="length-committed-streaming-ccm-v112"></a>
+### 长度提交的流式 CCM(v1.12)
+
+自 1.12 起,SM4-CCM 可以分块加密 —— **前提是**调用方在构造时提交精确的明文
+长度,因为 CCM 把该长度编码进第一个 CBC-MAC 分组 `B0`。之后每次 `update`
+立刻输出该分块的密文(`O(chunk)` 内存)。若流被过量喂入(中毒)或喂入不足,
+`finalize` 返回 `None`:不完整的流永远不会得到标签认证。这比
+`Sm4GcmEncryptor` 更严格,后者在中毒之后仍会返回标签。
+
+`Sm4CcmDecryptor` 与 `Sm4GcmDecryptor` 同形:输入可增量、输出有缓冲、验证后
+才提交。它**不是**输出流式。明文只从 `finalize_verify` 释放。
+
+同一 `(key, nonce)` 对配上**不同的声明长度**仍然是 nonce 重用(长度是 `B0`
+的一部分)。v1.13 额外让整个 SM4 流式家族在 drop 时清零;签名没有变化。
+
+```rust
+use gmcrypto_core::sm4::Sm4CcmEncryptor;
+
+// CCM encodes plaintext_len in B0: commit it at construction.
+let mut enc = Sm4CcmEncryptor::new(&key, &nonce, aad, plaintext.len(), 16)
+    .expect("valid nonce and tag length");
+let mut ct = Vec::new();
+for chunk in plaintext.chunks(16) {
+    ct.extend_from_slice(&enc.update(chunk).expect("not over-fed"));
+}
+let tag = enc.finalize().expect("not under-fed");
+```
+
+**对应示例:** `cargo run --features sm4-aead --example sm4_ccm_streaming`
 
 <a id="rustcrypto-aead-traits-v111"></a>
 ### RustCrypto `aead` trait 形态(v1.11)
@@ -581,7 +612,7 @@ ChaCha20Poly1305 并列。
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.11.2", features = ["aead-traits"] }
+gmcrypto-core = { version = "=1.13.0", features = ["aead-traits"] }
 aead = { version = "0.6.1", default-features = false, features = ["alloc"] }
 ```
 
