@@ -104,9 +104,11 @@ demonstrate the fuller SDK APIs.
 | SM4-CCM authenticated encryption (constrained AEAD) | [`sm4_ccm`](examples/sm4_ccm.rs) | `sm4-aead` | [§7](docs/using-gmcrypto-core.md#7-sm4-authenticated-encryption-gcm-and-ccm) |
 | SM4-GCM streaming (chunked AEAD) | [`sm4_streaming`](examples/sm4_streaming.rs) | `sm4-aead` | [§7](docs/using-gmcrypto-core.md#7-sm4-authenticated-encryption-gcm-and-ccm) |
 | SM4-CCM streaming (length-committed AEAD) | [`sm4_ccm_streaming`](examples/sm4_ccm_streaming.rs) | `sm4-aead` | [§7](docs/using-gmcrypto-core.md#7-sm4-authenticated-encryption-gcm-and-ccm) |
-| SM2 key exchange (GB/T 32918.3, confirmed + no-confirmation) | [`sm2_key_exchange`](examples/sm2_key_exchange.rs) | `sm2-key-exchange` | — |
-| TLCP key schedule (GB/T 38636 PRF) | [`tlcp_key_schedule`](examples/tlcp_key_schedule.rs) | `tlcp` | — |
-| TLCP record protection (GB/T 38636 §6.3) | [`tlcp_record`](examples/tlcp_record.rs) | `tlcp` | — |
+| SM2 key exchange (GB/T 32918.3, confirmed + no-confirmation) | [`sm2_key_exchange`](examples/sm2_key_exchange.rs) | `sm2-key-exchange` | [§11](docs/using-gmcrypto-core.md#11-sm2-key-exchange) |
+| TLCP key schedule (GB/T 38636 PRF) | [`tlcp_key_schedule`](examples/tlcp_key_schedule.rs) | `tlcp` | [§12](docs/using-gmcrypto-core.md#12-tlcp-toolkit) |
+| TLCP record protection (GB/T 38636 §6.3) | [`tlcp_record`](examples/tlcp_record.rs) | `tlcp` | [§12](docs/using-gmcrypto-core.md#12-tlcp-toolkit) |
+| TLCP certificate pair (GB/T 38636 §4) | [`tlcp_chain`](examples/tlcp_chain.rs) | `tlcp`, `x509` | [§12](docs/using-gmcrypto-core.md#12-tlcp-toolkit) |
+| X.509-with-SM2 leaf parse / signature check | [`x509_sm2`](examples/x509_sm2.rs) | `x509` | [§10](docs/using-gmcrypto-core.md#10-x509-with-sm2-certificates) |
 | SM4-XTS sector / disk encryption | [`sm4_xts`](examples/sm4_xts.rs) | `sm4-xts` | [§8](docs/using-gmcrypto-core.md#8-sm4-xts-disk-and-sector-encryption) |
 
 ### Ecosystem traits
@@ -147,6 +149,8 @@ narrates what it does and asserts its own round-trips. CI runs all of them.
 | [`sm2_key_exchange`](examples/sm2_key_exchange.rs) | SM2 key exchange — confirmed + no-confirmation (TLCP) variants | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
 | [`tlcp_key_schedule`](examples/tlcp_key_schedule.rs) | TLCP PRF: master secret, key block, Finished `verify_data` | `cargo run --features tlcp --example tlcp_key_schedule` |
 | [`tlcp_record`](examples/tlcp_record.rs) | TLCP record protect/deprotect: SM4-CBC (+ GCM) round-trip & rejection | `cargo run --features tlcp --example tlcp_record` |
+| [`tlcp_chain`](examples/tlcp_chain.rs) | TLCP [sign, enc] certificate-pair verify (leaf-first chains) | `cargo run --features tlcp,x509 --example tlcp_chain` |
+| [`x509_sm2`](examples/x509_sm2.rs) | X.509-with-SM2 leaf parse + signature verify (parse is not trust) | `cargo run --features x509 --example x509_sm2` |
 | [`sm4_xts`](examples/sm4_xts.rs) | SM4-XTS sector encryption | `cargo run --features sm4-xts --example sm4_xts` |
 
 ### Ecosystem-trait examples

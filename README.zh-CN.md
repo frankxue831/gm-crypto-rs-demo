@@ -105,9 +105,11 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 | SM4-CCM 认证加密(受限场景 AEAD) | [`sm4_ccm`](examples/sm4_ccm.rs) | `sm4-aead` | [§7](docs/using-gmcrypto-core.zh-CN.md#7-sm4-authenticated-encryption-gcm-and-ccm) |
 | SM4-GCM 流式加解密(分块 AEAD) | [`sm4_streaming`](examples/sm4_streaming.rs) | `sm4-aead` | [§7](docs/using-gmcrypto-core.zh-CN.md#7-sm4-authenticated-encryption-gcm-and-ccm) |
 | SM4-CCM 流式加解密(长度提交的 AEAD) | [`sm4_ccm_streaming`](examples/sm4_ccm_streaming.rs) | `sm4-aead` | [§7](docs/using-gmcrypto-core.zh-CN.md#7-sm4-authenticated-encryption-gcm-and-ccm) |
-| SM2 密钥交换(GB/T 32918.3,带确认 + 免确认) | [`sm2_key_exchange`](examples/sm2_key_exchange.rs) | `sm2-key-exchange` | — |
-| TLCP 密钥编排(GB/T 38636 PRF) | [`tlcp_key_schedule`](examples/tlcp_key_schedule.rs) | `tlcp` | — |
-| TLCP 记录层保护(GB/T 38636 §6.3) | [`tlcp_record`](examples/tlcp_record.rs) | `tlcp` | — |
+| SM2 密钥交换(GB/T 32918.3,带确认 + 免确认) | [`sm2_key_exchange`](examples/sm2_key_exchange.rs) | `sm2-key-exchange` | [§11](docs/using-gmcrypto-core.zh-CN.md#11-sm2-key-exchange) |
+| TLCP 密钥编排(GB/T 38636 PRF) | [`tlcp_key_schedule`](examples/tlcp_key_schedule.rs) | `tlcp` | [§12](docs/using-gmcrypto-core.zh-CN.md#12-tlcp-toolkit) |
+| TLCP 记录层保护(GB/T 38636 §6.3) | [`tlcp_record`](examples/tlcp_record.rs) | `tlcp` | [§12](docs/using-gmcrypto-core.zh-CN.md#12-tlcp-toolkit) |
+| TLCP 证书对(GB/T 38636 §4) | [`tlcp_chain`](examples/tlcp_chain.rs) | `tlcp`, `x509` | [§12](docs/using-gmcrypto-core.zh-CN.md#12-tlcp-toolkit) |
+| X.509-with-SM2 叶子证书解析 / 签名校验 | [`x509_sm2`](examples/x509_sm2.rs) | `x509` | [§10](docs/using-gmcrypto-core.zh-CN.md#10-x509-with-sm2-certificates) |
 | SM4-XTS 扇区/磁盘加密 | [`sm4_xts`](examples/sm4_xts.rs) | `sm4-xts` | [§8](docs/using-gmcrypto-core.zh-CN.md#8-sm4-xts-disk-and-sector-encryption) |
 
 <a id="ecosystem-traits"></a>
@@ -152,6 +154,8 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 | [`sm2_key_exchange`](examples/sm2_key_exchange.rs) | SM2 密钥交换 —— 带确认与免确认(TLCP)两种形态 | `cargo run --features sm2-key-exchange --example sm2_key_exchange` |
 | [`tlcp_key_schedule`](examples/tlcp_key_schedule.rs) | TLCP PRF:主密钥、密钥块、Finished `verify_data` | `cargo run --features tlcp --example tlcp_key_schedule` |
 | [`tlcp_record`](examples/tlcp_record.rs) | TLCP 记录层保护/解保护:SM4-CBC(+ GCM)往返与拒绝 | `cargo run --features tlcp --example tlcp_record` |
+| [`tlcp_chain`](examples/tlcp_chain.rs) | TLCP [签名,加密]证书对验证(叶子优先的证书链) | `cargo run --features tlcp,x509 --example tlcp_chain` |
+| [`x509_sm2`](examples/x509_sm2.rs) | X.509-with-SM2 叶子证书解析 + 签名验证(解析不是信任判定) | `cargo run --features x509 --example x509_sm2` |
 | [`sm4_xts`](examples/sm4_xts.rs) | SM4-XTS 扇区加密 | `cargo run --features sm4-xts --example sm4_xts` |
 
 <a id="ecosystem-trait-examples"></a>

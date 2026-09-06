@@ -33,6 +33,8 @@ jobs:
           cargo run --quiet --features sm2-key-exchange --example sm2_key_exchange
           cargo run --quiet --features tlcp --example tlcp_key_schedule
           cargo run --quiet --features tlcp --example tlcp_record
+          cargo run --quiet --features tlcp,x509 --example tlcp_chain
+          cargo run --quiet --features x509 --example x509_sm2
           cargo run --quiet --features sm4-xts --example sm4_xts
       - name: Check bilingual docs are in sync
         run: ./scripts/check-doc-sync.sh docs/using-gmcrypto-core.md docs/using-gmcrypto-core.zh-CN.md

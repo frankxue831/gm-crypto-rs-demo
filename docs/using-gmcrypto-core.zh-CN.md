@@ -56,7 +56,7 @@ KDF 参数过弱、密文未认证、密钥材料泄露等)的 Rust 开发者。
 ## 如何阅读本指南
 
 请把本指南当作一条引导式路径,而不是一组松散的笔记。先从环境搭建开始,
-再依次走过 原语 → 密钥 / 签名 / 加密 → 对称模式 → 最终回顾。
+再依次走过 原语 → 密钥 / 签名 / 加密 → 对称模式 → 最终回顾 → 工具箱(§10–§12)。
 
 两条轨道:带编号的各节是 **SDK 正确用法**。§1、§2、§6、§7 末尾的可选
 RustCrypto trait H3 是 **生态互通** —— 除非你已经在写针对这些 trait 的泛型代码,
@@ -69,6 +69,7 @@ RustCrypto trait H3 是 **生态互通** —— 除非你已经在写针对这�
 | SM2 公钥密码 | [§3](#3-sm2-digital-signatures) → [§5](#5-sm2-key-management-and-serialization) | 签名、加密、密钥格式、加密的 `PKCS#8` |
 | SM4 对称密码 | [§6](#6-sm4-symmetric-encryption-cbc-and-ctr) → [§8](#8-sm4-xts-disk-and-sector-encryption) | CBC、CTR、GCM、CCM、XTS,以及各模式特有的陷阱 |
 | 回顾 | [§9](#9-doing-crypto-correctly-cross-cutting-review) | 跨章节规则:如何安全地选择并组合各原语 |
+| 工具箱 | [§10](#10-x509-with-sm2-certificates) → [§12](#12-tlcp-toolkit) | 叶子证书、SM2 密钥交换、TLCP 原语 |
 
 <a id="table-of-contents"></a>
 ## 目录
@@ -88,6 +89,9 @@ RustCrypto trait H3 是 **生态互通** —— 除非你已经在写针对这�
    - [RustCrypto `aead` trait 形态(可选)](#rustcrypto-aead-traits-v111)
 8. [SM4-XTS 磁盘与扇区加密](#8-sm4-xts-disk-and-sector-encryption)
 9. [正确地做密码学(跨章节回顾)](#9-doing-crypto-correctly-cross-cutting-review)
+10. [X.509-with-SM2 证书](#10-x509-with-sm2-certificates)
+11. [SM2 密钥交换](#11-sm2-key-exchange)
+12. [TLCP 工具箱](#12-tlcp-toolkit)
 
 ---
 
@@ -125,8 +129,9 @@ aead-traits      = ["sm4-aead", "gmcrypto-core/aead-traits", "dep:aead"]  # Rust
 digest-traits    = ["gmcrypto-core/digest-traits", "dep:digest"]  # RustCrypto digest 0.11 (guide §1, §2)
 cipher-traits    = ["gmcrypto-core/cipher-traits", "dep:cipher"]  # RustCrypto cipher 0.5  (guide §6)
 sm4-xts          = ["gmcrypto-core/sm4-xts"]           # SM4-XTS            (guide §8)
-sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]  # SM2 key exchange   (README cookbook)
-tlcp             = ["gmcrypto-core/tlcp"]              # TLCP key schedule  (README cookbook)
+sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]  # SM2 key exchange   (guide §11)
+tlcp             = ["gmcrypto-core/tlcp"]              # TLCP toolkit       (guide §12)
+x509             = ["gmcrypto-core/x509"]              # X.509-with-SM2     (guide §10)
 ```
 
 <a id="get-randomness-right"></a>
@@ -737,6 +742,190 @@ HMAC-SM3 做 MAC。任何认证失败(`Err` / `None` / `false`)都必须视为�
 | 批量加密(带完整性) | SM4-GCM |
 | 加密磁盘上的静态数据 | SM4-XTS |
 | 把口令转换为密钥 | PBKDF2-HMAC-SM3 |
+| 解析 / 校验 SM2 证书的签名 | `x509`(不是信任判定) |
+| 双方协商共享密钥 | SM2 密钥交换(`sm2-key-exchange`);优先带确认 —— 不是 SM2 加密 |
+| TLCP 会话密钥 / 记录 / 证书对 | TLCP 工具箱(`tlcp`;证书对还需 `x509`)——不是协议引擎 |
 
 > ⚠️ **请牢记:** 本演示中的每一把密钥、nonce、盐值和口令都是公开的演示样例。
 > 生产代码必须自行生成。
+
+---
+
+<a id="10-x509-with-sm2-certificates"></a>
+## §10 X.509-with-SM2 证书
+
+**它是什么:** 按 GM/T 0015(SM2-with-SM3)剖面解析 X.509 v3 证书,并用调用方提供的
+颁发者公钥校验其签名。这**不是**一套 PKI 验证器:没有证书链、没有时钟、没有主机名、
+没有吊销。
+
+> 🧩 **需要开启特性:** `features = ["x509"]`。与 `tlcp` 相互独立。
+
+`Certificate::from_der` 返回 `Some` 只表示“这些字节在接受的剖面下能成帧为格式正确的证书”。
+`verify_signature` 返回 `true` 只表示“这把颁发者密钥签署了这些 `tbsCertificate` 字节”。
+两者都不是信任判定,也都不表示“这就是对端”。
+
+<a id="correct-usage-x509"></a>
+### 正确用法
+
+```rust
+use gmcrypto_core::x509::Certificate;
+
+let ca = Certificate::from_der(ca_der).expect("CA parses");
+let leaf = Certificate::from_der(leaf_der).expect("leaf parses");
+
+assert!(ca.is_self_issued());
+assert!(ca.verify_signature(&ca.subject_public_key()));
+assert!(leaf.verify_signature(&ca.subject_public_key()));
+assert!(!leaf.verify_signature(&leaf.subject_public_key()));
+```
+
+截断输入和尾随垃圾都会返回 `None`(绝不 panic)。DER 中翻转一个字节要么解析失败,
+要么校验失败 —— 绝不能既解析成功又校验通过。错误的签名者 ID 会失败
+(`verify_signature` 使用 GM/T 默认 ID `"1234567812345678"`;当 CA 实践不同时,
+使用 `verify_signature_with_id`)。
+
+<a id="do--dont-x509"></a>
+### Do / Don't
+
+> - ⚠️ **不该做:** 把 `true` 当成“这就是对端”。那是端点认证,由你自己负责。
+> - ⚠️ **不该做:** 把解析当作信任判定。把信任锚钉在你控制的存储里。
+> - ✅ **该做:** 把颁发者 / 主体 `Name` 当作原始 DER 比较(`issuer_raw` / `subject_raw`);crate 不解释 DN 字符串。
+> - ✅ **该做:** 若需要有效期窗口,使用你自己的时钟(`not_before` / `not_after` 已暴露;库本身没有时钟)。
+> - ℹ️ TLCP 的[签名,加密]证书对检查在 [§12](#12-tlcp-toolkit)(`verify_pair`,需要 `tlcp` **和** `x509`)。本节不调用 `verify_chain`。
+
+**对应示例:** `cargo run --features x509 --example x509_sm2`
+
+---
+
+<a id="11-sm2-key-exchange"></a>
+## §11 SM2 密钥交换
+
+**它是什么:** GM/T 0003.3(≡ GB/T 32918.3)的双方密钥交换协议。每一方持有一把静态
+SM2 密钥,采样一个临时密钥,并派生调用方选定长度的共享秘密。默认流程包含密钥确认
+(`S_A` / `S_B`);另有一对免确认的完成函数,供协议自行确认密钥的场景使用
+(TLCP 的 ECDHE 套件通过 Finished 完成这一点)。
+
+> 🧩 **需要开启特性:** `features = ["sm2-key-exchange"]`。
+
+握手的每一步都会**消耗**其状态值:临时密钥无法被复用,在对端的确认标签通过验证之前,
+任何一方都拿不到 `K`(带确认流程)。生产环境请自行生成静态密钥;演示把一份样例密钥
+与操作系统采样的密钥混用,只是为了展示两种构造方式。
+
+<a id="correct-usage-kx"></a>
+### 正确用法
+
+带确认(除非外围协议自己提供确认,否则优先使用这条路径):
+
+```rust
+use gmcrypto_core::sm2::key_exchange::{Sm2KxInitiator, Sm2KxResponder};
+
+let init = Sm2KxInitiator::new(&d_a, &p_b, id_a, id_b, 16).expect("kx");
+let (r_a, init_waiting) = init.produce_ephemeral(&mut rng).expect("R_A");
+let resp = Sm2KxResponder::new(&d_b, &p_a, id_a, id_b, 16).expect("kx");
+let (r_b, s_b, resp_waiting) = resp.respond(&r_a, &mut rng).expect("R_B");
+let (key_a, s_a) = init_waiting.confirm(&r_b, &s_b).expect("S_B");
+let key_b = resp_waiting.finish(&s_a).expect("S_A");
+assert_eq!(key_a.as_bytes(), key_b.as_bytes());
+```
+
+免确认(TLCP ECDHE 形态 —— 这些函数返回时对端尚未证明任何事;密钥不匹配会在协议后续步骤暴露):
+
+```rust
+let (r_b, key_b) = resp
+    .respond_without_key_confirmation(&r_a, &mut rng)
+    .expect("no-conf");
+let key_a = init_waiting
+    .derive_without_key_confirmation(&r_b)
+    .expect("no-conf");
+assert_eq!(key_a.as_bytes(), key_b.as_bytes());
+```
+
+<a id="do--dont-kx"></a>
+### Do / Don't
+
+> - ✅ **该做:** 优先使用带确认流程。只有当协议本身会确认密钥时(TLCP Finished,[§12](#12-tlcp-toolkit)),才使用免确认完成函数。
+> - ✅ **该做:** 从操作系统 CSPRNG 采样临时密钥,并依靠“消耗即转移”防止复用。
+> - ⚠️ **不该做:** 不要用密钥交换给单个接收方封装秘密 —— 那是 SM2 加密([§4](#4-sm2-public-key-encryption))。
+> - ⚠️ **不该做:** 不要跨握手复用临时密钥。身份字符串(`id_a`、`id_b`)必须在双方完全一致。
+
+**对应示例:** `cargo run --features sm2-key-exchange --example sm2_key_exchange`
+
+---
+
+<a id="12-tlcp-toolkit"></a>
+## §12 TLCP 工具箱
+
+**它是什么:** GB/T 38636 TLCP 的构建块 —— TLS 1.2 风格的 PRF(密钥编排)、
+逐条记录的保护/解保护,以及[签名,加密]证书对检查。**不是协议引擎:**
+没有握手状态机、没有 5 字节头分帧、没有 I/O。序列号、握手记录哈希、以及
+“这是不是我拨打的对端”,都由你负责。
+
+> 🧩 **需要开启特性:** `features = ["tlcp"]`。证书对验证还需要 `x509`。
+> SM4-GCM 记录另外需要 `sm4-aead`。
+
+<a id="correct-usage-tlcp"></a>
+### 正确用法
+
+密钥编排(主密钥,再由调用方切分密钥块,再得到 Finished 的 `verify_data`):
+
+```rust
+use gmcrypto_core::tlcp::key_schedule::{
+    derive_key_block, derive_master_secret, finished_verify_data, TlcpRole,
+    FINISHED_VERIFY_DATA_LEN, MASTER_SECRET_LEN,
+};
+
+let mut master = [0u8; MASTER_SECRET_LEN];
+derive_master_secret(&pre_master, &client_random, &server_random, &mut master);
+
+let mut key_block = [0u8; 40]; // GCM suite: 2 * (16-byte key + 4-byte IV salt)
+derive_key_block(&master, &client_random, &server_random, &mut key_block);
+
+let mut client_finished = [0u8; FINISHED_VERIFY_DATA_LEN];
+finished_verify_data(&master, TlcpRole::Client, &transcript_hash, &mut client_finished);
+```
+
+记录层保护。`type` / `version` / `seq` 作为显式参数传入,因为它们被绑定进 MAC(CBC)
+/ AAD(GCM)。绝不要复用 `(direction_key, seq)` 对。`deprotect_cbc` 针对 Lucky13
+做了加固:单一恒定时间的 `None`,失败时明文不会泄漏。
+
+```rust
+use gmcrypto_core::tlcp::record::{
+    deprotect_cbc, protect_cbc, RecordKeysCbc, TLCP_RECORD_VERSION,
+};
+
+let record = protect_cbc(
+    &client_keys,
+    seq,
+    content_type,
+    TLCP_RECORD_VERSION,
+    plaintext,
+    &mut rng,
+)
+.expect("within 2^14");
+let pt = deprotect_cbc(&client_keys, seq, content_type, TLCP_RECORD_VERSION, &record)
+    .expect("authentic");
+```
+
+证书对。证书链是**叶子优先**的。`true` 表示结构上链接到信任锚 + 角色 `keyUsage` +
+证书对绑定 —— **不是**端点认证。`at_time` 由调用方提供(`X509Time`);库本身没有时钟。
+
+```rust
+use gmcrypto_core::tlcp::chain::verify_pair;
+
+assert!(verify_pair(&[sign, int], &[enc, int], &[root], None));
+assert!(!verify_pair(&[enc, int], &[sign, int], &[root], None)); // swapped roles
+assert!(!verify_pair(&[sign, int], &[enc, int], &[], None));     // no anchor
+```
+
+<a id="do--dont-tlcp"></a>
+### Do / Don't
+
+> - ⚠️ **不该做:** 把这些 API 当成“实现 TLCP”。它们是原语;外围协议由你来写。
+> - ⚠️ **不该做:** 把 `verify_pair == true` 当成主机名 / 端点认证。请自行比较 `subject_raw`。
+> - ✅ **该做:** GCM 记录套件需启用 `sm4-aead`;CBC 在仅开启 `tlcp` 时即可使用。
+> - ✅ **该做:** 每条记录递增 `seq`。在 GCM 下复用 `(key, seq)` 等于复用 nonce,后果是灾难性的。
+> - ✅ **该做:** 每次握手建立新的 48 字节预主密钥(SM2 加密或 SM2 密钥交换,[§11](#11-sm2-key-exchange))。
+
+**对应示例:** `cargo run --features tlcp --example tlcp_key_schedule`、
+`cargo run --features tlcp --example tlcp_record`、
+`cargo run --features tlcp,x509 --example tlcp_chain`

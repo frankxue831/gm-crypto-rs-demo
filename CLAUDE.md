@@ -25,6 +25,8 @@ cargo run --features cipher-traits --example sm4_cipher_traits    # gated: RustC
 cargo run --features sm2-key-exchange --example sm2_key_exchange  # gated: SM2 KX (GM/T 0003.3; confirmed + no-confirmation)
 cargo run --features tlcp --example tlcp_key_schedule # gated: TLCP key schedule (GB/T 38636 PRF over HMAC-SM3)
 cargo run --features tlcp --example tlcp_record       # gated: TLCP record protect/deprotect (SM4-CBC; +GCM under sm4-aead)
+cargo run --features tlcp,x509 --example tlcp_chain   # gated: TLCP [sign, enc] certificate-pair verify
+cargo run --features x509 --example x509_sm2          # gated: X.509-with-SM2 leaf parse + signature verify
 cargo run --features sm4-xts  --example sm4_xts       # gated: SM4-XTS
 cargo run -- tour                                     # CLI walkthrough of all primitives
 ```
@@ -36,13 +38,14 @@ cargo run -- tour                                     # CLI walkthrough of all p
   `DEMO_PBKDF2_{PASSWORD,SALT,ITER,LEN}` (RFC 6070 inputs). CLI + examples both import these.
 - `src/main.rs` — the CLI (`hash`/`sign`/`verify`/`encrypt`/`decrypt`/`sm4-*`/
   `hmac`/`pbkdf2`/`key-info`/`tour`).
-- `examples/` — 17 self-verifying cookbook examples; CI builds and runs them all.
+- `examples/data/` — public GM/T 0015 / TLCP certificate DERs (`x509_sm2`, `tlcp_chain`).
+- `examples/` — 19 self-verifying cookbook examples; CI builds and runs them all.
   Default-feature: `sm3_hashing`, `hmac_and_kdf`, `sm2_sign_verify`, `sm2_encrypt_decrypt`,
   `sm2_key_encoding`, `sm4_cbc_ctr`. Gated: `sm4_aead`, `sm4_ccm`, `sm4_ccm_streaming`,
   `sm4_streaming` (`sm4-aead`);
   `sm4_aead_traits` (`aead-traits`); `sm3_digest_traits` (`digest-traits`); `sm4_cipher_traits`
   (`cipher-traits`); `sm2_key_exchange` (`sm2-key-exchange`); `tlcp_key_schedule`,
-  `tlcp_record` (`tlcp`); `sm4_xts` (`sm4-xts`).
+  `tlcp_record` (`tlcp`); `tlcp_chain` (`tlcp` + `x509`); `x509_sm2` (`x509`); `sm4_xts` (`sm4-xts`).
 
 ## Gotchas
 - **Keep the pin exact:** `gmcrypto-core = "=1.13.0"` — never a path/workspace/git
@@ -50,7 +53,8 @@ cargo run -- tour                                     # CLI walkthrough of all p
 - **Gated examples** need their feature flag (`sm4-aead` for `sm4_aead`/`sm4_ccm`/`sm4_ccm_streaming`/`sm4_streaming`,
   `aead-traits` for `sm4_aead_traits`, `digest-traits` for `sm3_digest_traits`, `cipher-traits` for
   `sm4_cipher_traits`, `sm2-key-exchange` for `sm2_key_exchange`, `tlcp` for
-  `tlcp_key_schedule`/`tlcp_record`, `sm4-xts` for
+  `tlcp_key_schedule`/`tlcp_record`, `tlcp`+`x509` for `tlcp_chain`, `x509` for
+  `x509_sm2`, `sm4-xts` for
   `sm4_xts`); the default build stays lean (no `gmcrypto-simd`). Lint with `--all-features` to cover them.
   `tlcp_record`'s SM4-GCM section additionally needs `sm4-aead` (a `#[cfg]` block); it's compiled under
   `--all-features` clippy and the example runs the CBC path under bare `tlcp`.
@@ -76,7 +80,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
   `let`-bindings) carries a 3-line canonical block:
   `// DEMO ONLY: <what> / // Production: <alternative> / // Reusing this risks: <failure mode>`.
   New fixtures should follow this shape; `grep -E 'DEMO ONLY:|Production:|Reusing this' src/ examples/`
-  should always cover every fixed key/IV/nonce/salt.
+  should always cover every fixed key/IV/nonce/salt/cert.
 - **§9 safety anchors:** every `examples/*.rs` `//!` header carries one line like
   `//! Safety: §9 rule N. <Label>` pointing at `docs/using-gmcrypto-core.md` §9
   ("Doing crypto correctly"). The guide uses bare H3 numbering (`### 1. Randomness` …
@@ -87,7 +91,7 @@ cargo run -- tour                                     # CLI walkthrough of all p
   relevant assertions in `if cfg!(feature = "...") { … } else { … }` so the same test passes
   under both default and feature-gated (`--all-features`) builds.
 - **CI** runs `cargo fmt --check`, clippy with `--all-features`, `cargo test` (default),
-  `cargo test --all-features`, all 17 examples (gated ones each under their minimal)
+  `cargo test --all-features`, all 19 examples (gated ones each under their minimal)
   feature), both `check-doc-sync.sh` invocations, `check-example-sync.sh` (every
   `examples/*.rs` must appear in ci.yml, both READMEs, and CLAUDE.md), and `gitleaks detect`.
 
