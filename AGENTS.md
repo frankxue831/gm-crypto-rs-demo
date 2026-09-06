@@ -35,8 +35,10 @@ Do not run the deprecated `superpowers-codex bootstrap` command.
 - CI baseline: GitHub Actions (Rust toolchain `1.85`) runs `cargo fmt --check`,
   `cargo clippy -D warnings`, `cargo test`, and every example — the default set plus the
   `sm4-aead` / `aead-traits` / `digest-traits` / `cipher-traits` / `sm2-key-exchange` / `tlcp` /
-  `x509` / `sm4-xts` gated ones — plus the doc/example sync scripts and a separate
-  `gitleaks` job (full-history scan, honours `.gitleaks.toml`).
+  `x509` / `sm4-xts` gated ones — plus the doc/example sync scripts,
+  `scripts/check-guide-snippets.sh` (type-checks every ```rust block in the guide against
+  the pinned crate under `--all-features`), and a separate `gitleaks` job (full-history
+  scan, honours `.gitleaks.toml`).
 
 ## Architectural Principles
 
@@ -129,7 +131,9 @@ English sibling. Examples (`examples/*.rs`) stay English.
 - `docs/using-gmcrypto-core.md` ↔ `docs/using-gmcrypto-core.zh-CN.md`
 - `README.md` ↔ `README.zh-CN.md`
 
-Both pairs are drift-checked in CI by `scripts/check-doc-sync.sh`.
+Both pairs are drift-checked in CI by `scripts/check-doc-sync.sh`, and every ```rust block in the
+guide is type-checked against the pinned crate by `scripts/check-guide-snippets.sh` (EN file only,
+since the zh-CN blocks are byte-identical).
 
 **Shipping policy:**
 
