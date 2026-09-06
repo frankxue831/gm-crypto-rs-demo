@@ -894,14 +894,37 @@ let pt = deprotect_cbc(&client_keys, seq, content_type, TLCP_RECORD_VERSION, &re
 
 Certificate pair. Chains are **leaf-first**. `true` is structural link-to-anchor
 + role `keyUsage` + pair binding — **not** endpoint authentication. `at_time` is
-caller-supplied (`X509Time`); the library has no clock.
+caller-supplied (`X509Time`); the library has no clock. `Certificate` is not
+`Clone`, so parse a fresh value for each chain slot (the intermediate appears in
+both chains).
 
 ```rust
 use gmcrypto_core::tlcp::chain::verify_pair;
+use gmcrypto_core::x509::Certificate;
 
-assert!(verify_pair(&[sign, int], &[enc, int], &[root], None));
-assert!(!verify_pair(&[enc, int], &[sign, int], &[root], None)); // swapped roles
-assert!(!verify_pair(&[sign, int], &[enc, int], &[], None));     // no anchor
+// `Certificate` is not `Clone`: every chain slot needs its own parse.
+let parse = |der: &[u8]| Certificate::from_der(der).expect("fixture parses");
+
+assert!(verify_pair(
+    &[parse(sign_der), parse(int_der)],
+    &[parse(enc_der), parse(int_der)],
+    &[parse(root_der)],
+    None,
+));
+// swapped roles
+assert!(!verify_pair(
+    &[parse(enc_der), parse(int_der)],
+    &[parse(sign_der), parse(int_der)],
+    &[parse(root_der)],
+    None,
+));
+// no anchor
+assert!(!verify_pair(
+    &[parse(sign_der), parse(int_der)],
+    &[parse(enc_der), parse(int_der)],
+    &[],
+    None,
+));
 ```
 
 ### Do / Don't

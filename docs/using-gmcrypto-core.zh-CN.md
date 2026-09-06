@@ -908,13 +908,35 @@ let pt = deprotect_cbc(&client_keys, seq, content_type, TLCP_RECORD_VERSION, &re
 
 证书对。证书链是**叶子优先**的。`true` 表示结构上链接到信任锚 + 角色 `keyUsage` +
 证书对绑定 —— **不是**端点认证。`at_time` 由调用方提供(`X509Time`);库本身没有时钟。
+`Certificate` 不是 `Clone`,因此每个链位置都要重新解析一份(中间证书在两条链中都会出现)。
 
 ```rust
 use gmcrypto_core::tlcp::chain::verify_pair;
+use gmcrypto_core::x509::Certificate;
 
-assert!(verify_pair(&[sign, int], &[enc, int], &[root], None));
-assert!(!verify_pair(&[enc, int], &[sign, int], &[root], None)); // swapped roles
-assert!(!verify_pair(&[sign, int], &[enc, int], &[], None));     // no anchor
+// `Certificate` is not `Clone`: every chain slot needs its own parse.
+let parse = |der: &[u8]| Certificate::from_der(der).expect("fixture parses");
+
+assert!(verify_pair(
+    &[parse(sign_der), parse(int_der)],
+    &[parse(enc_der), parse(int_der)],
+    &[parse(root_der)],
+    None,
+));
+// swapped roles
+assert!(!verify_pair(
+    &[parse(enc_der), parse(int_der)],
+    &[parse(sign_der), parse(int_der)],
+    &[parse(root_der)],
+    None,
+));
+// no anchor
+assert!(!verify_pair(
+    &[parse(sign_der), parse(int_der)],
+    &[parse(enc_der), parse(int_der)],
+    &[],
+    None,
+));
 ```
 
 <a id="do--dont-tlcp"></a>

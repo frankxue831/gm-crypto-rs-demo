@@ -169,7 +169,9 @@ unauthenticated modes, PBKDF2 iterations, key storage, and a
 [`docs/using-gmcrypto-core.md`](docs/using-gmcrypto-core.md).
 
 Two tracks in that guide: **SDK usage** is each section body; **RustCrypto trait
-fits** are optional H3s at the end of §1, §2, §6, and §7.
+fits** are optional H3s at the end of §1, §2, §6, and §7. The closing
+[toolkit sections (§10–§12)](docs/using-gmcrypto-core.md#10-x509-with-sm2-certificates)
+cover X.509-with-SM2, SM2 key exchange, and the TLCP primitives.
 
 ## Test
 

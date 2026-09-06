@@ -176,7 +176,8 @@ cargo run -- pbkdf2 password 73616c74 10000 32
 (英文版:[`docs/using-gmcrypto-core.md`](docs/using-gmcrypto-core.md))。
 
 指南有两条轨道:**SDK 用法**是各节正文;**RustCrypto trait 形态**是 §1、§2、§6、
-§7 末尾的可选 H3。
+§7 末尾的可选 H3。结尾的[工具箱各节(§10–§12)](docs/using-gmcrypto-core.zh-CN.md#10-x509-with-sm2-certificates)
+覆盖 X.509-with-SM2、SM2 密钥交换与 TLCP 原语。
 
 <a id="test"></a>
 ## 测试
