@@ -56,6 +56,13 @@ API names, crate names, commands, filenames, feature flags, error messages, and 
 | scalar | 标量 | as in "32-byte big-endian scalar" for SM2 private keys |
 | cross-cutting | 横向 | as in "cross-cutting review" → 横向回顾 |
 | password | 口令 | preferred over 密码 to avoid ambiguity with "cipher" (密码 also means cipher in Chinese) |
+| leaf certificate | 叶子证书 | the end-entity cert in a chain (the sign or enc cert in a TLCP pair) |
+| trust anchor | 信任锚 | a CA the caller already trusts; never inferred from parse |
+| certificate chain | 证书链 | caller-ordered, leaf-first sequence linking a leaf to a trust anchor |
+| certificate pair | 证书对 | TLCP's [signature, encryption] double-cert profile |
+| endpoint authentication | 端点认证 | "this is the peer I dialed" (hostname / identity binding) — not what `verify_signature` / `verify_pair` decide |
+| trust decision | 信任判定 | whether a cert is valid for a purpose; parse and signature-check are not this |
+| self-issued | 自颁发 | subject Name byte-equal to issuer Name; not the same as self-signed |
 | authenticated encryption | 认证加密 | full form of AEAD |
 | non-repudiation | 不可抵赖性 | core property of digital signatures |
 | hybrid (encryption pattern) | 混合加密 | as in "SM2-wraps-SM4-GCM hybrid pattern" |

@@ -191,6 +191,12 @@ fn tour_prints_non_flaky_section_results() {
     assert!(
         out.contains("SM4-XTS:                    cargo run --features sm4-xts  --example sm4_xts")
     );
+    assert!(
+        out.contains("X.509 SM2 leaf:             cargo run --features x509 --example x509_sm2")
+    );
+    assert!(out.contains(
+        "TLCP cert pair:             cargo run --features tlcp,x509 --example tlcp_chain"
+    ));
     assert!(out.contains("Production safety:          docs/using-gmcrypto-core.md \u{a7}9"));
 }
 

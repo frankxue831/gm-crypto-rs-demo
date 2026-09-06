@@ -327,6 +327,8 @@ fn print_tour() -> Result<ExitCode, String> {
         "SM4-CCM streaming:          cargo run --features sm4-aead --example sm4_ccm_streaming"
     );
     println!("SM4-XTS:                    cargo run --features sm4-xts  --example sm4_xts");
+    println!("X.509 SM2 leaf:             cargo run --features x509 --example x509_sm2");
+    println!("TLCP cert pair:             cargo run --features tlcp,x509 --example tlcp_chain");
     println!("Production safety:          docs/using-gmcrypto-core.md \u{00a7}9");
 
     Ok(ExitCode::SUCCESS)

@@ -57,7 +57,7 @@ nonces, weak KDF settings, unauthenticated ciphertext, leaked key material.
 
 Use this as a guided path, not a loose collection of notes. Start with setup,
 then move from primitives → keys / signatures / encryption → symmetric modes →
-final review.
+final review → toolkit extras (§10–§12).
 
 Two tracks: the numbered sections are **correct SDK usage**. Optional
 RustCrypto-trait H3s at the end of §1, §2, §6, and §7 are **ecosystem fit** —
@@ -70,6 +70,7 @@ skip them unless you already write generic code against those traits.
 | SM2 public-key crypto | [§3](#3-sm2-digital-signatures) → [§5](#5-sm2-key-management-and-serialization) | Signatures, encryption, key formats, encrypted PKCS#8 |
 | SM4 symmetric crypto | [§6](#6-sm4-symmetric-encryption-cbc-and-ctr) → [§8](#8-sm4-xts-disk-and-sector-encryption) | CBC, CTR, GCM, CCM, XTS, and mode-specific hazards |
 | Review | [§9](#9-doing-crypto-correctly-cross-cutting-review) | Cross-cutting rules for choosing and combining primitives safely |
+| Toolkit | [§10](#10-x509-with-sm2-certificates) → [§12](#12-tlcp-toolkit) | X.509 leaf, SM2 key exchange, TLCP primitives |
 
 ## Table of contents
 
@@ -88,6 +89,9 @@ skip them unless you already write generic code against those traits.
    - [RustCrypto `aead` traits (optional)](#rustcrypto-aead-traits-v111)
 8. [SM4-XTS disk and sector encryption](#8-sm4-xts-disk-and-sector-encryption)
 9. [Doing crypto correctly (cross-cutting review)](#9-doing-crypto-correctly-cross-cutting-review)
+10. [X.509-with-SM2 certificates](#10-x509-with-sm2-certificates)
+11. [SM2 key exchange](#11-sm2-key-exchange)
+12. [TLCP toolkit](#12-tlcp-toolkit)
 
 ---
 
@@ -123,8 +127,9 @@ aead-traits      = ["sm4-aead", "gmcrypto-core/aead-traits", "dep:aead"]  # Rust
 digest-traits    = ["gmcrypto-core/digest-traits", "dep:digest"]  # RustCrypto digest 0.11 (guide §1, §2)
 cipher-traits    = ["gmcrypto-core/cipher-traits", "dep:cipher"]  # RustCrypto cipher 0.5  (guide §6)
 sm4-xts          = ["gmcrypto-core/sm4-xts"]           # SM4-XTS            (guide §8)
-sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]  # SM2 key exchange   (README cookbook)
-tlcp             = ["gmcrypto-core/tlcp"]              # TLCP key schedule  (README cookbook)
+sm2-key-exchange = ["gmcrypto-core/sm2-key-exchange"]  # SM2 key exchange   (guide §11)
+tlcp             = ["gmcrypto-core/tlcp"]              # TLCP toolkit       (guide §12)
+x509             = ["gmcrypto-core/x509"]              # X.509-with-SM2     (guide §10)
 ```
 
 ### Get randomness right
@@ -724,6 +729,212 @@ purposes.
 | Encrypt bulk data (with integrity) | SM4-GCM |
 | Encrypt data at rest on disk | SM4-XTS |
 | Turn a password into a key | PBKDF2-HMAC-SM3 |
+| Parse / signature-check an SM2 certificate | `x509` (not a trust decision) |
+| Agree a shared secret (two parties) | SM2 key exchange (`sm2-key-exchange`); prefer confirmation — not SM2 encryption |
+| TLCP session keys / records / cert pair | TLCP toolkit (`tlcp`; pair also needs `x509`) — not a protocol engine |
 
 > ⚠️ **Remember:** every key, nonce, salt, and password in this demo is a public
 > fixture. Production code must generate its own.
+
+---
+
+## 10. X.509-with-SM2 certificates
+
+**What it is:** parse an X.509 v3 certificate in the GM/T 0015 (SM2-with-SM3)
+profile and check its signature against a caller-supplied issuer key. This is
+**not** a PKI validator: no chain, no clock, no hostname, no revocation.
+
+> 🧩 **Feature-gated:** `features = ["x509"]`. Independent of `tlcp`.
+
+A `Some` from `Certificate::from_der` means only "these bytes frame as a
+well-formed cert in the accepted profile." A `true` from `verify_signature`
+means only "this issuer key signed these `tbsCertificate` bytes." Neither is a
+trust decision, and neither means "this is the peer."
+
+### Correct usage
+
+```rust
+use gmcrypto_core::x509::Certificate;
+
+let ca = Certificate::from_der(ca_der).expect("CA parses");
+let leaf = Certificate::from_der(leaf_der).expect("leaf parses");
+
+assert!(ca.is_self_issued());
+assert!(ca.verify_signature(&ca.subject_public_key()));
+assert!(leaf.verify_signature(&ca.subject_public_key()));
+assert!(!leaf.verify_signature(&leaf.subject_public_key()));
+```
+
+Truncated input and trailing junk return `None` (never panic). A flipped byte in
+the DER either fails to parse or fails to verify — it must not both parse and
+verify. Wrong signer IDs fail (`verify_signature` uses the GM/T default ID
+`"1234567812345678"`; use `verify_signature_with_id` when CA practice differs).
+
+### Do / Don't
+
+> - ⚠️ **Don't** treat `true` as "this is the peer." That is endpoint authentication, and you own it.
+> - ⚠️ **Don't** treat parse as a trust decision. Pin trust anchors in a store you control.
+> - ✅ **Do** compare issuer / subject `Name`s as raw DER (`issuer_raw` / `subject_raw`); the crate does not interpret DN strings.
+> - ✅ **Do** keep your own clock if you need a validity window (`not_before` / `not_after` are exposed; the library has none).
+> - ℹ️ TLCP's [sign, enc] certificate-pair check is [§12](#12-tlcp-toolkit) (`verify_pair`, needs `tlcp` **and** `x509`). This section does not call `verify_chain`.
+
+**Matching example:** `cargo run --features x509 --example x509_sm2`
+
+---
+
+## 11. SM2 key exchange
+
+**What it is:** the GM/T 0003.3 (≡ GB/T 32918.3) two-party key-exchange protocol.
+Each side holds a static SM2 key, samples an ephemeral, and derives a shared
+secret of caller-chosen length. The default flow includes key confirmation
+(`S_A` / `S_B`); a no-confirmation pair of completers exists for protocols that
+confirm the key themselves (TLCP ECDHE suites do this via Finished).
+
+> 🧩 **Feature-gated:** `features = ["sm2-key-exchange"]`.
+
+Every handshake step **consumes** its state value: an ephemeral cannot be reused,
+and neither side can touch `K` before the peer's confirmation tag verifies
+(confirmed flow). Generate fresh static keys for real use; the demo mixes a
+fixture with an OS-sampled key only to show both constructors.
+
+### Correct usage
+
+Confirmed (prefer this unless the surrounding protocol supplies confirmation):
+
+```rust
+use gmcrypto_core::sm2::key_exchange::{Sm2KxInitiator, Sm2KxResponder};
+
+let init = Sm2KxInitiator::new(&d_a, &p_b, id_a, id_b, 16).expect("kx");
+let (r_a, init_waiting) = init.produce_ephemeral(&mut rng).expect("R_A");
+let resp = Sm2KxResponder::new(&d_b, &p_a, id_a, id_b, 16).expect("kx");
+let (r_b, s_b, resp_waiting) = resp.respond(&r_a, &mut rng).expect("R_B");
+let (key_a, s_a) = init_waiting.confirm(&r_b, &s_b).expect("S_B");
+let key_b = resp_waiting.finish(&s_a).expect("S_A");
+assert_eq!(key_a.as_bytes(), key_b.as_bytes());
+```
+
+No-confirmation (TLCP ECDHE shape — the peer has proven nothing when these
+return; a key mismatch surfaces later in the protocol):
+
+```rust
+let (r_b, key_b) = resp
+    .respond_without_key_confirmation(&r_a, &mut rng)
+    .expect("no-conf");
+let key_a = init_waiting
+    .derive_without_key_confirmation(&r_b)
+    .expect("no-conf");
+assert_eq!(key_a.as_bytes(), key_b.as_bytes());
+```
+
+### Do / Don't
+
+> - ✅ **Do** prefer the confirmed flow. Reach for the no-confirmation completers only when the protocol itself confirms the key (TLCP Finished, [§12](#12-tlcp-toolkit)).
+> - ✅ **Do** sample ephemerals from the OS CSPRNG and let consume-on-transition prevent reuse.
+> - ⚠️ **Don't** wrap a secret for one recipient with key exchange — that is SM2 encryption ([§4](#4-sm2-public-key-encryption)).
+> - ⚠️ **Don't** reuse an ephemeral across handshakes. Identity strings (`id_a`, `id_b`) must be identical on both sides.
+
+**Matching example:** `cargo run --features sm2-key-exchange --example sm2_key_exchange`
+
+---
+
+## 12. TLCP toolkit
+
+**What it is:** building blocks for GB/T 38636 TLCP — the TLS-1.2-style PRF
+(key schedule), per-record protect/deprotect, and the [sign, enc] certificate-pair
+check. **Not a protocol engine:** no handshake state machine, no 5-byte header
+framing, no I/O. You own sequence numbers, transcript hashing, and "is this the
+peer I dialed."
+
+> 🧩 **Feature-gated:** `features = ["tlcp"]`. Certificate-pair verify also needs
+> `x509`. SM4-GCM records additionally need `sm4-aead`.
+
+### Correct usage
+
+Key schedule (master secret, then a caller-carved key block, then Finished
+`verify_data`):
+
+```rust
+use gmcrypto_core::tlcp::key_schedule::{
+    derive_key_block, derive_master_secret, finished_verify_data, TlcpRole,
+    FINISHED_VERIFY_DATA_LEN, MASTER_SECRET_LEN,
+};
+
+let mut master = [0u8; MASTER_SECRET_LEN];
+derive_master_secret(&pre_master, &client_random, &server_random, &mut master);
+
+let mut key_block = [0u8; 40]; // GCM suite: 2 * (16-byte key + 4-byte IV salt)
+derive_key_block(&master, &client_random, &server_random, &mut key_block);
+
+let mut client_finished = [0u8; FINISHED_VERIFY_DATA_LEN];
+finished_verify_data(&master, TlcpRole::Client, &transcript_hash, &mut client_finished);
+```
+
+Record protection. `type` / `version` / `seq` are explicit because they are bound
+into the MAC (CBC) / AAD (GCM). Never reuse a `(direction_key, seq)` pair.
+`deprotect_cbc` is Lucky13-hardened: one constant-time `None`, and no plaintext
+escapes on failure.
+
+```rust
+use gmcrypto_core::tlcp::record::{
+    deprotect_cbc, protect_cbc, RecordKeysCbc, TLCP_RECORD_VERSION,
+};
+
+let record = protect_cbc(
+    &client_keys,
+    seq,
+    content_type,
+    TLCP_RECORD_VERSION,
+    plaintext,
+    &mut rng,
+)
+.expect("within 2^14");
+let pt = deprotect_cbc(&client_keys, seq, content_type, TLCP_RECORD_VERSION, &record)
+    .expect("authentic");
+```
+
+Certificate pair. Chains are **leaf-first**. `true` is structural link-to-anchor
++ role `keyUsage` + pair binding — **not** endpoint authentication. `at_time` is
+caller-supplied (`X509Time`); the library has no clock. `Certificate` is not
+`Clone`, so parse a fresh value for each chain slot (the intermediate appears in
+both chains).
+
+```rust
+use gmcrypto_core::tlcp::chain::verify_pair;
+use gmcrypto_core::x509::Certificate;
+
+// `Certificate` is not `Clone`: every chain slot needs its own parse.
+let parse = |der: &[u8]| Certificate::from_der(der).expect("fixture parses");
+
+assert!(verify_pair(
+    &[parse(sign_der), parse(int_der)],
+    &[parse(enc_der), parse(int_der)],
+    &[parse(root_der)],
+    None,
+));
+// swapped roles
+assert!(!verify_pair(
+    &[parse(enc_der), parse(int_der)],
+    &[parse(sign_der), parse(int_der)],
+    &[parse(root_der)],
+    None,
+));
+// no anchor
+assert!(!verify_pair(
+    &[parse(sign_der), parse(int_der)],
+    &[parse(enc_der), parse(int_der)],
+    &[],
+    None,
+));
+```
+
+### Do / Don't
+
+> - ⚠️ **Don't** treat these APIs as "implement TLCP." They are primitives; the surrounding protocol is yours.
+> - ⚠️ **Don't** treat `verify_pair == true` as hostname / endpoint authentication. Compare `subject_raw` yourself.
+> - ✅ **Do** enable `sm4-aead` for the GCM record suite; CBC is available under bare `tlcp`.
+> - ✅ **Do** advance `seq` per record. Reusing `(key, seq)` under GCM repeats the nonce and is catastrophic.
+> - ✅ **Do** establish a fresh 48-byte pre-master secret per handshake (SM2 encryption or SM2-KX, [§11](#11-sm2-key-exchange)).
+
+**Matching examples:** `cargo run --features tlcp --example tlcp_key_schedule`,
+`cargo run --features tlcp --example tlcp_record`,
+`cargo run --features tlcp,x509 --example tlcp_chain`
