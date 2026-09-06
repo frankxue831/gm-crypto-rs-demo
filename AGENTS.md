@@ -32,9 +32,11 @@ Do not run the deprecated `superpowers-codex bootstrap` command.
   re-exports none of them, so a downstream consumer declares each themselves. The default
   build resolves none of the three.
 - Test surface: Rust unit/integration tests and CLI smoke tests under `tests/`.
-- CI baseline: GitHub Actions (Rust toolchain `1.85`) runs `cargo clippy -D warnings`,
-  `cargo test`, and every example — the default set plus the `sm4-aead` / `aead-traits` /
-  `digest-traits` / `cipher-traits` / `sm2-key-exchange` / `tlcp` / `x509` / `sm4-xts` gated ones.
+- CI baseline: GitHub Actions (Rust toolchain `1.85`) runs `cargo fmt --check`,
+  `cargo clippy -D warnings`, `cargo test`, and every example — the default set plus the
+  `sm4-aead` / `aead-traits` / `digest-traits` / `cipher-traits` / `sm2-key-exchange` / `tlcp` /
+  `x509` / `sm4-xts` gated ones — plus the doc/example sync scripts and a separate
+  `gitleaks` job (full-history scan, honours `.gitleaks.toml`).
 
 ## Architectural Principles
 
