@@ -188,6 +188,13 @@ Compile all examples:
 cargo test --examples --all-features
 ```
 
+Type-check every Rust snippet in the guide against the pinned crate (CI runs
+this too; the zh-CN guide's blocks are byte-identical by construction):
+
+```bash
+./scripts/check-guide-snippets.sh
+```
+
 This checks that the examples build, but does not execute the assertions in
 their `main` functions. Use the `cargo run --example …` commands in the
 [cookbook tables](#cookbook-examples) to run them; CI runs every listed example.

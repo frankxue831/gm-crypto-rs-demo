@@ -43,6 +43,8 @@ jobs:
         run: ./scripts/check-doc-sync.sh README.md README.zh-CN.md
       - name: Check example inventory sync
         run: ./scripts/check-example-sync.sh
+      - name: Type-check guide code snippets
+        run: ./scripts/check-guide-snippets.sh
 
   gitleaks:
     runs-on: ubuntu-latest

@@ -195,6 +195,13 @@ cargo test --all-features
 cargo test --examples --all-features
 ```
 
+按照钉住的 crate 版本对指南中的每一段 Rust 代码做类型检查(CI 也会运行;
+中文指南的代码块与英文版逐字节一致,因此只需检查一份):
+
+```bash
+./scripts/check-guide-snippets.sh
+```
+
 这会检查示例能否构建,但不会执行 `main` 函数中的断言。请使用
 [示例表格](#cookbook-examples)中的 `cargo run --example …` 命令运行示例;
 CI 会运行表中的全部示例。

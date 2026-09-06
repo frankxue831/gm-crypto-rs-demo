@@ -162,9 +162,14 @@ pub fn os_rng() -> SysRng {
 `from_bytes_be`,接受 32 字节大端标量;对应的公钥直接从私钥取得:
 
 ```rust
+use gm_crypto_rs_demo::{decode_hex, SAMPLE_PRIVATE_KEY_HEX};
 use gmcrypto_core::sm2::Sm2PrivateKey;
 
-let bytes: [u8; 32] = /* decode "3945208F...4DF7C5B8" */;
+// The demo ships the scalar as hex ("3945208F…4DF7C5B8"); decode it to 32 big-endian bytes.
+let bytes: [u8; 32] = decode_hex(SAMPLE_PRIVATE_KEY_HEX)
+    .expect("hex")
+    .try_into()
+    .expect("32-byte scalar");
 let key = Sm2PrivateKey::from_bytes_be(&bytes).expect("valid scalar");
 let public = key.public_key();
 ```
@@ -550,9 +555,12 @@ let mut block = Array::from(plaintext_block);
 
 ```rust
 use gmcrypto_core::sm4::mode_gcm;
+use rand_core::TryRng;
 
-let nonce = /* 12 random bytes, unique per key */;
-let (ciphertext, tag) = mode_gcm::encrypt(&key, &nonce, aad, plaintext);
+let mut nonce = [0u8; 12]; // 96-bit, fresh per message under this key
+os_rng().try_fill_bytes(&mut nonce).expect("OS RNG");
+let (ciphertext, tag) =
+    mode_gcm::encrypt(&key, &nonce, aad, plaintext).expect("plaintext within the GCM ceiling");
 
 // decrypt returns None if the ciphertext, tag, OR aad was altered
 let pt = mode_gcm::decrypt(&key, &nonce, aad, &ciphertext, &tag).expect("auth ok");

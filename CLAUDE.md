@@ -29,6 +29,7 @@ cargo run --features tlcp,x509 --example tlcp_chain   # gated: TLCP [sign, enc] 
 cargo run --features x509 --example x509_sm2          # gated: X.509-with-SM2 leaf parse + signature verify
 cargo run --features sm4-xts  --example sm4_xts       # gated: SM4-XTS
 cargo run -- tour                                     # CLI walkthrough of all primitives
+./scripts/check-guide-snippets.sh                     # type-check every ```rust block in the guide (--all-features)
 ```
 
 ## Layout
@@ -93,7 +94,17 @@ cargo run -- tour                                     # CLI walkthrough of all p
 - **CI** runs `cargo fmt --check`, clippy with `--all-features`, `cargo test` (default),
   `cargo test --all-features`, all 19 examples (gated ones each under their minimal)
   feature), both `check-doc-sync.sh` invocations, `check-example-sync.sh` (every
-  `examples/*.rs` must appear in ci.yml, both READMEs, and CLAUDE.md), and `gitleaks detect`.
+  `examples/*.rs` must appear in ci.yml, both READMEs, and CLAUDE.md), `check-guide-snippets.sh`,
+  and `gitleaks detect`.
+- **Guide snippets must type-check:** `scripts/check-guide-snippets.sh` wraps every ```rust block
+  in `docs/using-gmcrypto-core.md` in its own `fn` behind a fixture prelude (the `DEMO_*` consts,
+  `os_rng`/`sample_private_key`, a section-appropriate `key`, TLCP/X.509 fixtures) and
+  `cargo check --all-features` runs it in a scratch crate under `target/guide-snippets/`. Blocks are
+  fragments on purpose — use the prelude's names (`key`, `nonce`, `aad`, `plaintext`, `iv`, `msg`,
+  `password`, `salt`, `public`, `d_a`/`p_b`, `client_keys`, `*_der` …) rather than inventing new ones,
+  and add any genuinely new binding to the prelude in the script. Only `docs/using-gmcrypto-core.md`
+  is read (the zh-CN blocks are byte-identical by `check-doc-sync.sh`). A block that must not be
+  compiled can opt out with a ```rust,ignore fence, in both languages. `?` works in any block.
 
 ## Claude Code specifics
 - Skills/superpowers come from your installed Claude plugins. The Codex-specific
