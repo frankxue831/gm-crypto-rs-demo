@@ -11,7 +11,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.85
         with:
-          components: clippy
+          components: clippy, rustfmt
+      - run: cargo fmt --check
       - run: cargo clippy --all-targets --all-features -- -D warnings
       - run: cargo test
       - run: cargo test --all-features
@@ -42,3 +43,13 @@ jobs:
         run: ./scripts/check-doc-sync.sh README.md README.zh-CN.md
       - name: Check example inventory sync
         run: ./scripts/check-example-sync.sh
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # scan the full history, matching the local `gitleaks detect`
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
