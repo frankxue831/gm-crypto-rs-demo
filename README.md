@@ -9,7 +9,7 @@ It pins the crates.io release exactly — never a path or workspace checkout —
 so it also smoke-tests what an outside user actually gets:
 
 ```toml
-gmcrypto-core = "=1.13.0"
+gmcrypto-core = "=1.16.0"
 ```
 
 All sample keys, IVs, passwords, signer IDs, and outputs in this repository
