@@ -60,9 +60,9 @@ checksum = "15b85f9c39137c3a891689859392b1bd49812121d0d61c9caf00d46ed5ce06ae"
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.17"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
+checksum = "5ca28b0ae3115b884660db4118d803791fd6756b6e88f39c0f3f7859060d7566"
 dependencies = [
  "libc",
 ]
@@ -150,9 +150,9 @@ dependencies = [
 
 [[package]]
 name = "gmcrypto-core"
-version = "1.13.0"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7229c25ab33a6ab2e8134ff692a7cd685b9be93613016e533389dd2f87bccdd4"
+checksum = "695673aeeae5f68a24930f9dcea88225a2e6e35161ed04e48feb732d051448e0"
 dependencies = [
  "aead",
  "cipher",
@@ -167,9 +167,9 @@ dependencies = [
 
 [[package]]
 name = "gmcrypto-simd"
-version = "1.13.0"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b83208665be07dcb272e96b42bfc37dab5ec64918a416a44c295d4bc6742c15"
+checksum = "c9ea6eddebbc28e200fc86c3bb78b08e1e27dc11e63be7ac043a74bb4eb7461b"
 dependencies = [
  "cpufeatures",
 ]
