@@ -115,7 +115,7 @@ pub fn encode_hex(bytes: &[u8]) -> String {
 
 /// Decode a hex string into bytes.
 pub fn decode_hex(input: &str) -> Result<Vec<u8>, String> {
-    if input.len() % 2 != 0 {
+    if !input.len().is_multiple_of(2) {
         return Err("hex input must have an even number of characters".to_owned());
     }
     let mut out = Vec::with_capacity(input.len() / 2);

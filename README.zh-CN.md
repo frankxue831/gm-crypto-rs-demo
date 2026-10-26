@@ -9,7 +9,7 @@
 依赖,因此也能冒烟测试外部用户实际拿到的内容:
 
 ```toml
-gmcrypto-core = "=1.16.0"
+gmcrypto-core = "=1.17.0"
 ```
 
 本仓库中所有的示例密钥、IV、口令、签名者 ID 与输出均为公开演示素材,请勿用于真实数据。
@@ -17,7 +17,7 @@ gmcrypto-core = "=1.16.0"
 <a id="start-here"></a>
 ## 从这里开始
 
-请先安装 Git 和 Rust 1.85 或更新版本(含 Cargo)。下文的 shell 示例使用
+请先安装 Git 和 Rust 1.87 或更新版本(含 Cargo)。下文的 shell 示例使用
 Bash/Zsh 语法。克隆仓库并运行演示巡览:
 
 ```bash

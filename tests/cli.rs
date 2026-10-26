@@ -280,7 +280,7 @@ fn sm4_decrypt_rejects_tampered_ciphertext() {
     assert!(encrypted.status.success(), "stderr: {}", stderr(&encrypted));
     let ct_hex = stdout(&encrypted);
     let ct_hex = ct_hex.trim();
-    assert!(ct_hex.len() >= 2 && ct_hex.len() % 2 == 0);
+    assert!(ct_hex.len() >= 2 && ct_hex.len().is_multiple_of(2));
 
     // Flip the low nibble of the final ciphertext byte. The last block is
     // the PKCS#7 padding block, so this deterministically corrupts the pad

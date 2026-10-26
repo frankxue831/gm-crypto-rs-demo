@@ -9,7 +9,7 @@ It pins the crates.io release exactly — never a path or workspace checkout —
 so it also smoke-tests what an outside user actually gets:
 
 ```toml
-gmcrypto-core = "=1.16.0"
+gmcrypto-core = "=1.17.0"
 ```
 
 All sample keys, IVs, passwords, signer IDs, and outputs in this repository
@@ -17,7 +17,7 @@ are public demo material. Do not use them for real data.
 
 ## Start here
 
-Install Git and Rust 1.85 or newer (including Cargo). The shell examples use
+Install Git and Rust 1.87 or newer (including Cargo). The shell examples use
 Bash/Zsh syntax. Clone the repository and run the tour:
 
 ```bash

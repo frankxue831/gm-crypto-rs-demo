@@ -107,7 +107,7 @@ it — never a path / workspace / git dependency:
 
 ```toml
 [dependencies]
-gmcrypto-core = "=1.16.0"
+gmcrypto-core = "=1.17.0"
 getrandom = { version = "0.4.2", features = ["sys_rng"], default-features = false }
 rand_core = "0.10.1"
 ```
@@ -233,7 +233,7 @@ SHA-2 with no glue.
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.16.0", features = ["digest-traits"] }
+gmcrypto-core = { version = "=1.17.0", features = ["digest-traits"] }
 digest = { version = "0.11.3", default-features = false, features = ["mac"] }
 ```
 
@@ -508,7 +508,7 @@ takes SM4 next to AES.
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.16.0", features = ["cipher-traits"] }
+gmcrypto-core = { version = "=1.17.0", features = ["cipher-traits"] }
 cipher = { version = "0.5.2", default-features = false }
 ```
 
@@ -539,7 +539,7 @@ let mut block = Array::from(plaintext_block);
 (AEAD)**: it encrypts *and* authenticates in one step, so tampering is detected on
 decrypt. This should be your default for symmetric encryption.
 
-> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=1.16.0", features = ["sm4-aead"] }`.
+> 🧩 **Feature-gated:** `gmcrypto-core = { version = "=1.17.0", features = ["sm4-aead"] }`.
 > SM4-CCM lives in the same feature via `sm4::mode_ccm`.
 
 ### Correct usage
@@ -619,7 +619,7 @@ and ChaCha20Poly1305 with no glue.
 
 ```toml
 [dependencies]
-gmcrypto-core = { version = "=1.16.0", features = ["aead-traits"] }
+gmcrypto-core = { version = "=1.17.0", features = ["aead-traits"] }
 aead = { version = "0.6.1", default-features = false, features = ["alloc"] }
 ```
 
