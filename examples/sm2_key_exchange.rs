@@ -8,7 +8,6 @@ use gmcrypto_core::sm2::key_exchange::{
     Sm2KxConfirm, Sm2KxEphemeralPoint, Sm2KxInitiator, Sm2KxResponder,
 };
 use gmcrypto_core::sm2::Sm2PrivateKey;
-use rand_core::TryRng;
 
 // DEMO ONLY: fixed identity strings so the demo narration is reproducible.
 // Production: use each party's real, agreed identity (certificate DN, account ID) — both sides must pass identical bytes.
@@ -19,26 +18,6 @@ const ID_B: &[u8] = b"bob@example";
 /// Length of the agreed key in bytes — 16 here, i.e. a fresh SM4-sized key.
 const KLEN: usize = 16;
 
-/// Generate a fresh SM2 private key from the OS CSPRNG.
-///
-/// The SDK has no keygen helper by design: you draw 32 random bytes and
-/// let `from_bytes_be` reject out-of-range candidates (zero or >= n,
-/// roughly 1 in 2^32), so this loop almost never repeats. Production
-/// code should also zeroize the candidate buffer after use.
-fn generate_private_key() -> Sm2PrivateKey {
-    let mut rng = os_rng();
-    loop {
-        let mut candidate = [0u8; 32];
-        rng.try_fill_bytes(&mut candidate)
-            .expect("OS RNG must be available");
-        // from_bytes_be returns a constant-time CtOption; convert to a
-        // plain Option so we can branch on it.
-        if let Some(key) = Option::from(Sm2PrivateKey::from_bytes_be(&candidate)) {
-            return key;
-        }
-    }
-}
-
 fn main() {
     println!("== SM2 key exchange (GM/T 0003.3) ==\n");
     let mut rng = os_rng();
@@ -48,7 +27,7 @@ fn main() {
     // fresh each run — the demo shows both ways to obtain a key.
     let d_a = sample_private_key();
     let p_a = d_a.public_key();
-    let d_b = generate_private_key();
+    let d_b = Sm2PrivateKey::generate(&mut rng).expect("generate party B's private key");
     let p_b = d_b.public_key();
 
     // ---- Happy path: full handshake with key confirmation ----
